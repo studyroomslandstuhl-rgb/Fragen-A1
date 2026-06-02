@@ -535,6 +535,33 @@ tr:hover {
   padding: 15px;
   margin: 15px 0;
 }
+
+/* FIX: Memory auf dem Handy kompakt: 4 Karten pro Reihe */
+.memory {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 8px !important;
+}
+.memcard {
+  min-height: 76px !important;
+  padding: 6px !important;
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+@media (max-width: 480px) {
+  .memory {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+  .memcard {
+    min-height: 68px !important;
+    padding: 5px !important;
+    font-size: 11px !important;
+  }
+}
+
 </style>
 </head>
 
@@ -1202,22 +1229,25 @@ function ok(user,answer){
 function showAdvanceButton(good){
   let fb = $("feedback");
   if(!fb || !good) return;
-  $("nextQuestionBtn")?.remove();
-  $("continueExerciseBtn")?.remove();
+
+  document.querySelectorAll("#nextQuestionBtn,#continueExerciseBtn").forEach(b => b.remove());
+
   let finished = i >= DATA.length - 1;
   if(finished){
     exerciseProgress[game] = 100;
-    fb.innerHTML += `<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`;
-    setTimeout(()=>{
-      let b=$("continueExerciseBtn");
-      if(b) b.onclick = () => goNextExercise();
-    },0);
+    fb.insertAdjacentHTML("beforeend", `<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`);
+    let b = $("continueExerciseBtn");
+    if(b) b.onclick = () => goNextExercise();
   } else {
-    fb.innerHTML += `<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`;
-    setTimeout(()=>{
-      let b=$("nextQuestionBtn");
-      if(b) b.onclick = () => { i++; saveLocal(); render(); };
-    },0);
+    fb.insertAdjacentHTML("beforeend", `<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`);
+    let b = $("nextQuestionBtn");
+    if(b) b.onclick = () => {
+      i++;
+      helpWrongTries = 0;
+      responseTries = 0;
+      saveLocal();
+      render();
+    };
   }
 }
 function goNextExercise(){
@@ -1228,18 +1258,60 @@ function goNextExercise(){
 }
 function mark(good, userAnswer=""){
   attempts++;
-  let entry = {question: item().topic, correct: good, answer: userAnswer, acceptedAnswers: answerVariants(), timestamp: new Date().toLocaleTimeString()};
+  let entry = {
+    question: item().topic,
+    correct: good,
+    answer: userAnswer,
+    acceptedAnswers: game==="puzzle" ? questionVariants(item()) : answerVariants(),
+    timestamp: new Date().toLocaleTimeString()
+  };
   answerHistory.push(entry);
-  if(good){ correct++; score+=10; }
+
+  if(good){
+    correct++;
+    score += 10;
+    helpWrongTries = 0;
+  }
+
   let perQuestionProgress = Math.round(((i + (good ? 1 : 0)) / DATA.length) * 100);
   exerciseProgress[game] = Math.max(exerciseProgress[game] || 0, Math.min(100, perQuestionProgress));
+
   if(good){
-    $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>";
+    $("feedback").innerHTML = "<div class='ok'>✔ Richtig! +10 Punkte</div>";
   } else {
-    $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Mögliche Antwort: <strong>"+getAnswer()+"</strong><br><span class='small'>Auch akzeptiert: "+answerVariants().join(" · ")+"</span></div>";
+    helpWrongTries++;
+
+    if(game === "puzzle"){
+      if(helpWrongTries < 2){
+        $("feedback").innerHTML = "<div class='no'>❌ Nicht ganz. Versuche es noch einmal. Hilfe bekommst du nach dem zweiten falschen Versuch.</div>";
+      } else {
+        $("feedback").innerHTML =
+          "<div class='no'>❌ Noch nicht richtig.</div>" +
+          "<div class='small'><strong>Hilfe:</strong> Baue die Frage. Beginne mit dem Fragewort: <strong>" +
+          (item().qSie.split(' ')[0]) +
+          "</strong></div>";
+      }
+    } else {
+      if(helpWrongTries < 2){
+        $("feedback").innerHTML = "<div class='no'>❌ Nicht ganz. Versuche es noch einmal. Hilfe bekommst du nach dem zweiten falschen Versuch.</div>";
+      } else if(helpWrongTries === 2){
+        $("feedback").innerHTML = "<div class='no'>❌ Noch nicht richtig.</div><div class='small'><strong>Hilfe:</strong> "+responseHint()+"</div>";
+      } else {
+        $("feedback").innerHTML =
+          "<div class='no'>❌ Noch nicht richtig.</div><div class='small'><strong>Hilfe:</strong> " +
+          responseHint() +
+          "<br>Akzeptierte Antworten: " +
+          answerVariants().join(" · ") +
+          "</div>";
+      }
+    }
   }
-  saveLocal(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
-  if(game!=="memory") showAdvanceButton(good);
+
+  saveLocal();
+  updateStatsBox();
+  updateExerciseTracker();
+  renderGameButtons();
+  showAdvanceButton(good);
 }
 function getAnswer(){
   let x=item();
@@ -1299,6 +1371,10 @@ function getCrossTopicAnswers(){
   });
   pool = shuffle(pool).slice(0,3);
   return shuffle([correctAnswer, ...pool]);
+}
+
+function questionVariants(x=item()){
+  return [x.qSie, x.qDu].filter(Boolean);
 }
 
 function responseHint(){
@@ -1502,7 +1578,12 @@ function attachEventListeners(){
   // Quickfire events
   if(game === "quickfire"){
     document.querySelectorAll(".quiz-option").forEach(btn => {
-      btn.onclick = () => { let ans = btn.dataset.answer; if(ans===getAnswer()||ok(ans,getAnswer())){mark(true,ans)}else{mark(false,ans)} };
+      btn.onclick = () => {
+        let ans = btn.dataset.answer;
+        let good = (ans===getAnswer() || ok(ans,getAnswer()));
+        document.querySelectorAll(".quiz-option").forEach(b => b.disabled = true);
+        mark(good, ans);
+      };
     });
   }
   
@@ -1511,7 +1592,12 @@ function attachEventListeners(){
     let play = $("playQuestion");
     if(play) play.onclick = () => speakCurrent();
     document.querySelectorAll(".listen-option").forEach(btn => {
-      btn.onclick = () => { let ans = btn.dataset.answer; if(ans===getAnswer()||ok(ans,getAnswer())){mark(true,ans)}else{mark(false,ans)} };
+      btn.onclick = () => {
+        let ans = btn.dataset.answer;
+        let good = (ans===getAnswer() || ok(ans,getAnswer()));
+        document.querySelectorAll(".quiz-option").forEach(b => b.disabled = true);
+        mark(good, ans);
+      };
     });
   }
   
