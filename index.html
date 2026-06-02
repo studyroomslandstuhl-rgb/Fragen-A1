@@ -72,12 +72,55 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 <label>Vorname *</label><input id="fname" placeholder="z.B. Maria, Omar, Anna, Ali">
 <label>Nachname *</label><input id="lname" placeholder="z.B. Schmidt, Hassan, Müller, Ben Ali">
 <label>Kurscode *</label><input id="course" placeholder="z.B. A1-Montag">
-<label>Heimatland *</label><select id="country"></select>
+<label>Heimatland *</label>
+<select id="country">
+  <option value="">-- Heimatland wählen --</option>
+  <option value="Deutschland">Deutschland</option>
+  <option value="Syrien">Syrien</option>
+  <option value="Ukraine">Ukraine</option>
+  <option value="Afghanistan">Afghanistan</option>
+  <option value="Irak">Irak</option>
+  <option value="Türkei">Türkei</option>
+  <option value="Polen">Polen</option>
+  <option value="Rumänien">Rumänien</option>
+  <option value="Bulgarien">Bulgarien</option>
+  <option value="Somalia">Somalia</option>
+  <option value="Eritrea">Eritrea</option>
+  <option value="Ghana">Ghana</option>
+  <option value="Nigeria">Nigeria</option>
+  <option value="Algerien">Algerien</option>
+  <option value="Marokko">Marokko</option>
+  <option value="Tunesien">Tunesien</option>
+  <option value="Iran">Iran</option>
+  <option value="Pakistan">Pakistan</option>
+  <option value="Indien">Indien</option>
+  <option value="Frankreich">Frankreich</option>
+  <option value="Spanien">Spanien</option>
+  <option value="Italien">Italien</option>
+  <option value="USA">USA</option>
+  <option value="China">China</option>
+  <option value="Japan">Japan</option>
+  <option value="Russland">Russland</option>
+</select>
 <label>Sprache *</label><input id="langInput" placeholder="z.B. Arabisch, Ukrainisch, Türkisch">
 <label>Wohnort in Deutschland *</label><input id="cityInput" placeholder="z.B. Homburg, Berlin, Leipzig">
 <label>Alter *</label><input id="ageInput" type="number" min="1" max="120" placeholder="z.B. 35">
-<label>Geburtsort *</label><input id="birthplaceInput" placeholder="Geburtsort eingeben">
-<label>Kinder *</label><select id="childrenInput"></select>
+<label>Geburtsort *</label><input id="birthplaceInput" type="text" autocomplete="off" placeholder="Geburtsort frei eingeben, z.B. Aleppo, Kiew, Algier">
+<label>Kinder *</label>
+<select id="childrenInput">
+  <option value="">-- wählen --</option>
+  <option value="0">keine Kinder</option>
+  <option value="1">1 Kind</option>
+  <option value="2">2 Kinder</option>
+  <option value="3">3 Kinder</option>
+  <option value="4">4 Kinder</option>
+  <option value="5">5 Kinder</option>
+  <option value="6">6 Kinder</option>
+  <option value="7">7 Kinder</option>
+  <option value="8">8 Kinder</option>
+  <option value="9">9 Kinder</option>
+  <option value="10">10 Kinder</option>
+</select>
 <label>Familienstand *</label>
 <select id="maritalInput">
 <option value="">-- wählen --</option>
@@ -88,6 +131,7 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 </select>
 <div class="flex">
 <button onclick="start()">🚀 Starten</button>
+<button class="secondary" type="button" onclick="initLogin()">🔄 Auswahlfelder neu laden</button>
 <button class="secondary" onclick="teacher()">👨‍🏫 Lehrer-Dashboard</button>
 <button class="danger reset-user" onclick="resetEverything()">🗑️ Von 0 anfangen</button>
 </div>
@@ -216,9 +260,27 @@ function sanitizeState(){
 }
 
 function initLogin(){
-  $("country").innerHTML = '<option value="">-- Heimatland wählen --</option>' + Object.keys(COUNTRIES).map(c=>`<option value="${c}">${c}</option>`).join("");
-  $("childrenInput").innerHTML = '<option value="">-- wählen --</option>' + Array.from({length:11},(_,n)=>`<option value="${n}">${n===0?"keine Kinder":n===1?"1 Kind":n+" Kinder"}</option>`).join("");
-  $("country").onchange = () => { if($("country").value && !$("langInput").value) $("langInput").value = COUNTRIES[$("country").value] || ""; };
+  const countryEl = $("country");
+  if(countryEl && countryEl.options.length <= 1){
+    countryEl.innerHTML = '<option value="">-- Heimatland wählen --</option>' + Object.keys(COUNTRIES).map(c=>`<option value="${c}">${c}</option>`).join("");
+  }
+  if(countryEl){
+    countryEl.onchange = () => { 
+      if(countryEl.value && !$("langInput").value) $("langInput").value = COUNTRIES[countryEl.value] || ""; 
+    };
+  }
+
+  const childEl = $("childrenInput");
+  if(childEl && childEl.options.length <= 1){
+    childEl.innerHTML = '<option value="">-- wählen --</option>' + Array.from({length:11},(_,n)=>`<option value="${n}">${n===0?"keine Kinder":n===1?"1 Kind":n+" Kinder"}</option>`).join("");
+  }
+
+  const birthEl = $("birthplaceInput");
+  if(birthEl){
+    birthEl.type = "text";
+    birthEl.placeholder = "Geburtsort frei eingeben, z.B. Aleppo, Kiew, Algier";
+  }
+
   renderSavedUserBox();
 }
 function childText(n){n=String(n??"0"); const w={"0":"keine Kinder","1":"ein Kind","2":"zwei Kinder","3":"drei Kinder","4":"vier Kinder","5":"fünf Kinder","6":"sechs Kinder","7":"sieben Kinder","8":"acht Kinder","9":"neun Kinder","10":"zehn Kinder"}; return w[n]||n+" Kinder";}
@@ -544,6 +606,36 @@ function exportMe(){let data=JSON.stringify({student,course,score,attempts,corre
 function importFiles(e){let files=[...e.target.files],rows=[];files.forEach(f=>{let r=new FileReader();r.onload=ev=>{let d=JSON.parse(ev.target.result);rows.push(d);$("dashTable").innerHTML="<table><tr><th>Name</th><th>Kurs</th><th>Punkte</th><th>Richtig</th><th>Versuche</th></tr>"+rows.map(x=>`<tr><td>${x.student}</td><td>${x.course}</td><td>${x.score}</td><td>${x.correct}</td><td>${x.attempts}</td></tr>`).join("")+"</table>"};r.readAsText(f)})}
 function downloadCSV(){let rows=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");let csv="Name,Kurs,Wert,Zeit,Genauigkeit,Datum\n"+rows.map(e=>`${e.name},${e.course},${e.score},${e.time},${e.accuracy},${e.date}`).join("\n");let blob=new Blob([csv],{type:"text/csv"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="A1_Ergebnisse.csv";a.click()}
 
+
+
+function restoreSession(){
+  try{
+    initLogin();
+    let active = localStorage.getItem("A1_ACTIVE_SESSION");
+    if(!active) return;
+    let raw = localStorage.getItem(active);
+    if(!raw) return;
+    let x = JSON.parse(raw);
+    student = x.student || "";
+    course = x.course || "";
+    studentPerson = x.studentPerson || {...DEFAULT_PROFILE};
+    score = x.score || 0;
+    attempts = x.attempts || 0;
+    correct = x.correct || 0;
+    i = x.i || 0;
+    game = x.game || "learn";
+    questionOrder = Array.isArray(x.questionOrder) ? x.questionOrder : DATA.map((_,idx)=>idx);
+    answerHistory = x.answerHistory || [];
+    exerciseProgress = x.exerciseProgress || {};
+    $("login").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("hello").innerText="Hallo, "+(studentPerson.fname||student)+"!";
+    updateAll();
+    render();
+  }catch(e){
+    console.error(e);
+  }
+}
 
 window.addEventListener("error", e => {
   const g = $("game");
