@@ -410,6 +410,34 @@ function mode(m){
 }
 function normalizeGermanNumber(t){return (t||"").replace(/\beins\b/g,"1").replace(/\bein\b/g,"1").replace(/\bzwei\b/g,"2").replace(/\bdrei\b/g,"3").replace(/\bvier\b/g,"4").replace(/\bfünf\b/g,"5").replace(/\bfuenf\b/g,"5").replace(/\bsechs\b/g,"6").replace(/\bsieben\b/g,"7").replace(/\bacht\b/g,"8").replace(/\bneun\b/g,"9").replace(/\bzehn\b/g,"10")}
 function clean(t){return normalizeGermanNumber(String(t||"").toLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ß/g,"ss").replace(/[.,!?;:]/g,"").replace(/\s+/g," ").trim()}
+
+function fillTemplate(t, p=studentPerson){
+  p = p || {};
+  let first = p.fname || DEFAULT_PROFILE.fname || "";
+  let last = p.lname || DEFAULT_PROFILE.lname || "";
+  let full = p.full || ((first + " " + last).trim());
+  let spellFirst = first.toUpperCase().split("").join("-");
+  let spellLast = last.toUpperCase().split("").join("-");
+  let spellFirstSpace = first.toLowerCase().split("").join(" ");
+  let spellLastSpace = last.toLowerCase().split("").join(" ");
+
+  return String(t || "")
+    .replaceAll("{name}", full)
+    .replaceAll("{fname}", first)
+    .replaceAll("{lname}", last)
+    .replaceAll("{origin}", p.origin || DEFAULT_PROFILE.origin || "")
+    .replaceAll("{lang}", p.lang || DEFAULT_PROFILE.lang || "")
+    .replaceAll("{city}", p.city || DEFAULT_PROFILE.city || "")
+    .replaceAll("{birthplace}", p.birthplace || DEFAULT_PROFILE.birthplace || "")
+    .replaceAll("{age}", p.age || DEFAULT_PROFILE.age || "")
+    .replaceAll("{spell_fname}", spellFirst)
+    .replaceAll("{spell_lname}", spellLast)
+    .replaceAll("{spell_fname_space}", spellFirstSpace)
+    .replaceAll("{spell_lname_space}", spellLastSpace)
+    .replaceAll("{children_answer}", childrenAnswer(p))
+    .replaceAll("{marital_answer}", maritalAnswer(p));
+}
+
 function answerVariants(x=item(),p=studentPerson){
  let variants=(x.answerTemplates||[]).map(t=>fillTemplate(t,p));
  if(x.topic==="Kinder"){let n=String(p.childrenNumber); if(n==="0")variants.push("Nein.","Ich habe keine Kinder."); else if(n==="1")variants.push("Ja.","Ich habe ein Kind.","Ich habe 1 Kind."); else variants.push("Ja.",`Ich habe ${n} Kinder.`,`Ich habe ${numberWord(n)} Kinder.`)}
