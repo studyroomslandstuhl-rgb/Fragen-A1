@@ -648,12 +648,34 @@ const NAMES = {
 };
 
 const SURNAMES = {
-  syrian: ["Yilmaz", "Hassan", "Abbas", "Khalil", "Saleh"],
-  ukrainian: ["Kovalenko", "Shevchenko", "Ivanov", "Petrov", "Zelensky"],
-  romanian: ["Popescu", "Ionescu", "Georgescu", "Dumitru", "Mihai"]
+  "syrien": ["Yilmaz", "Hassan", "Abbas", "Khalil", "Saleh"],
+  "ukraine": ["Kovalenko", "Shevchenko", "Ivanov", "Petrov", "Zelensky"],
+  "rumänien": ["Popescu", "Ionescu", "Georgescu", "Dumitru", "Mihai"],
+  "afghanistan": ["Ahmed", "Ali", "Hassan", "Mohammad", "Khan"],
+  "irak": ["Ali", "Hassan", "Ibrahim", "Karim", "Rashid"],
+  "türkei": ["Özdemir", "Türk", "Aydın", "Kaya", "Demir"],
+  "polen": ["Kowalski", "Nowak", "Kamiński", "Lewandowski", "Grabowski"],
+  "bulgarien": ["Ivanov", "Dimitrov", "Nikolov", "Petrov", "Atanasov"],
+  "somalia": ["Hassan", "Mohammed", "Abdi", "Ali", "Ibrahim"],
+  "eritrea": ["Eritrea", "Tekle", "Solomon", "Assefa", "Desta"],
+  "ghana": ["Mensah", "Owusu", "Boateng", "Addae", "Acquah"],
+  "nigeria": ["Okafor", "Adeyemi", "Okonkwo", "Oluwaseun", "Adekunle"]
 };
 
-const ORIGINS = ["Syrien", "Ukraine", "Rumänien"];
+const LANGUAGES = {
+  "syrien": "Arabisch",
+  "ukraine": "Ukrainisch",
+  "rumänien": "Rumänisch",
+  "afghanistan": "Dari",
+  "irak": "Arabisch",
+  "türkei": "Türkisch",
+  "polen": "Polnisch",
+  "bulgarien": "Bulgarisch",
+  "somalia": "Somali",
+  "eritrea": "Tigrinya",
+  "ghana": "Twi",
+  "nigeria": "Yoruba"
+};
 
 const DATA = [
   {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",alts:["Ich heiße {name}.","Ich bin {name}.","Mein Name ist {name}."]},
@@ -670,12 +692,13 @@ const DATA = [
   {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",a:"Ich bin in Aleppo geboren.",alts:["Ich bin in Kiew geboren.","Ich bin in Kabul geboren."]}
 ];
 
-const EXERCISES = ['learn', 'qa', 'quickfire', 'listen', 'dictation', 'puzzle', 'speak', 'memory', 'exam'];
+const EXERCISES = ['learn', 'qa', 'quickfire', 'listen', 'listenrespond', 'dictation', 'puzzle', 'speak', 'memory', 'exam'];
 const EXERCISE_NAMES = {
   learn: '📚 Lernen',
   qa: '🗣️ Q&A',
   quickfire: '⚡ Blitzfeuer',
   listen: '🎧 Hören',
+  listenrespond: '🎤 Hören & Antworten',
   dictation: '✍️ Diktat',
   puzzle: '🧩 Puzzle',
   speak: '🎤 Sprechen',
@@ -686,7 +709,7 @@ const EXERCISE_NAMES = {
 let student="", course="", gender="", country="", game="learn", i=0, score=0, attempts=0, correct=0;
 let dashboard=[], answerHistory=[], memoryCards=[], first=null, lock=false;
 let exerciseProgress = {};
-let currentPerson = {};
+let studentPerson = {};
 
 function $(id){return document.getElementById(id)}
 function item(){return DATA[i%DATA.length]}
@@ -695,19 +718,22 @@ function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,g
 function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}}}
 function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
 
-function generatePerson(){
-  let origin = ORIGINS[Math.floor(Math.random() * ORIGINS.length)];
+function generatePersonForAnswers(){
+  let origin = country ? country : ["Syrien", "Ukraine", "Rumänien"][Math.floor(Math.random() * 3)];
   let isMale = Math.random() > 0.5;
   let genderKey = isMale ? 'm' : 'f';
   let fname = NAMES[genderKey][Math.floor(Math.random() * NAMES[genderKey].length)];
-  let lname = SURNAMES[origin.toLowerCase()][Math.floor(Math.random() * SURNAMES[origin.toLowerCase()].length)];
+  
+  let originKey = origin.toLowerCase();
+  let lname = SURNAMES[originKey] ? SURNAMES[originKey][Math.floor(Math.random() * SURNAMES[originKey].length)] : "Schmidt";
+  let lang = LANGUAGES[originKey] ? LANGUAGES[originKey] : "Deutsch";
   
   return {
     fname: fname,
     lname: lname,
     full: fname + " " + lname,
     origin: origin,
-    lang: origin === "Syrien" ? "Arabisch" : origin === "Ukraine" ? "Ukrainisch" : "Rumänisch"
+    lang: lang
   };
 }
 
@@ -715,7 +741,13 @@ function start(){
   student=$("name").value.trim(); course=$("course").value.trim(); gender=$("gender").value; country=$("country").value;
   if(!student||!course){alert("Bitte Name und Kurscode eingeben.");return}
   loadLocal(); 
-  currentPerson = generatePerson();
+  studentPerson = {
+    fname: student.split(" ")[0] || student,
+    lname: student.split(" ")[1] || "",
+    full: student,
+    origin: country || "",
+    lang: country ? (LANGUAGES[country.toLowerCase()] || "Deutsch") : "Deutsch"
+  };
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
   $("hello").innerText="Hallo, "+student+"!";
   stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
@@ -837,9 +869,30 @@ function getAnswer(){
   let x = item();
   if(x.a) return x.a;
   if(x.alts && x.alts.length > 0){
-    return x.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang);
+    return x.alts[0].replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang);
   }
   return "...";
+}
+
+function getRandomizedAnswers(){
+  let x = item();
+  let correctAnswer = getAnswer();
+  let otherAnswers = [];
+  
+  for(let j = 0; j < 3; j++){
+    let otherPerson = generatePersonForAnswers();
+    let otherAnswer = "";
+    
+    if(x.alts && x.alts.length > 0){
+      otherAnswer = x.alts[0].replace("{name}", otherPerson.full).replace("{fname}", otherPerson.fname).replace("{lname}", otherPerson.lname).replace("{origin}", otherPerson.origin).replace("{lang}", otherPerson.lang);
+    }
+    
+    if(otherAnswer && otherAnswer !== correctAnswer){
+      otherAnswers.push(otherAnswer);
+    }
+  }
+  
+  return shuffle([correctAnswer, ...otherAnswers.slice(0, 3)]);
 }
 
 function render(){
@@ -848,7 +901,7 @@ function render(){
   
   if(game==="learn"){
     let answer = getAnswer();
-    let alts = x.alts ? x.alts.map(a => a.replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang)) : [];
+    let alts = x.alts ? x.alts.map(a => a.replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang)) : [];
     html+=`<div class="big">${q}</div><p>${x.qDu}</p>
     <button onclick="speakText('${q}')">🔊 Frage hören</button>
     <button onclick="speakText('${answer}')">🔊 Antwort hören</button>
@@ -867,36 +920,34 @@ function render(){
   }
   
   if(game==="quickfire"){
-    let answer = getAnswer();
-    let alts = x.alts ? x.alts.map(a => a.replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang)) : [];
-    let opts=shuffle([answer,...DATA.filter(d=>d.topic!==x.topic).slice(0,2).map(d=>{
-      let da = d.alts ? d.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang) : d.a;
-      return da;
-    }), ...DATA.filter(d=>d.topic!==x.topic).slice(0,1).map(d=>{
-      let oldPerson = generatePerson();
-      let da = d.alts ? d.alts[0].replace("{name}", oldPerson.full).replace("{fname}", oldPerson.fname).replace("{lname}", oldPerson.lname).replace("{origin}", oldPerson.origin).replace("{lang}", oldPerson.lang) : d.a;
-      return da;
-    })]);
+    let opts=getRandomizedAnswers();
     html+=`<div class="big">${q}</div><p>⚡ Wähle schnell die richtige Antwort!</p>`
       +opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")
       +`<div id="feedback"></div>`;
   }
   
   if(game==="listen"){
-    let answer = getAnswer();
-    let alts = x.alts ? x.alts.map(a => a.replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang)) : [];
-    let opts=shuffle([answer,...DATA.filter(d=>d.topic!==x.topic).slice(0,2).map(d=>{
-      let da = d.alts ? d.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang) : d.a;
-      return da;
-    }), ...DATA.filter(d=>d.topic!==x.topic).slice(0,1).map(d=>{
-      let oldPerson = generatePerson();
-      let da = d.alts ? d.alts[0].replace("{name}", oldPerson.full).replace("{fname}", oldPerson.fname).replace("{lname}", oldPerson.lname).replace("{origin}", oldPerson.origin).replace("{lang}", oldPerson.lang) : d.a;
-      return da;
-    })]);
+    let opts=getRandomizedAnswers();
     html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
     <button onclick="speakText('${q}')">🔊 Frage abspielen</button><br>
     ${opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")}
     <div id="feedback"></div>`;
+  }
+  
+  if(game==="listenrespond"){
+    let answer = getAnswer();
+    html+=`<p>🎤 Höre die Frage und antworte mündlich!</p>
+    <button onclick="speakQuestion()">🔊 Frage abspielen</button>
+    <p id="questionText" style="font-style:italic; margin:15px 0;"></p>
+    <button onclick="listenAndRespond()">🎤 Antworte mit deiner Stimme</button>
+    <p id="heard"></p>
+    <div id="feedback"></div>
+    <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
+    <button class="success hidden" id="listenContinue" onclick="next()">⏭️ Nächste Frage</button>`;
+    
+    setTimeout(() => {
+      $("questionText").innerText = q;
+    }, 100);
   }
   
   if(game==="dictation"){
@@ -952,6 +1003,24 @@ function render(){
   saveLocal();
 }
 
+function speakQuestion(){
+  let x = item();
+  speakText(x.qSie);
+}
+
+function listenAndRespond(){
+  let R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!R){alert("Spracherkennung wird in diesem Browser nicht unterstützt.");return}
+  let r=new R();r.lang="de-DE";r.start();
+  r.onresult=e=>{
+    let t=e.results[0][0].transcript;
+    let answer = getAnswer();
+    $("heard").innerText="Gehört: "+t;
+    mark(ok(t,answer), t);
+    document.getElementById("listenContinue").classList.remove("hidden");
+  }
+}
+
 function next(){i++;render()}
 function esc(s){return s.replace(/'/g,"\\'")}
 function shuffle(a){return a.sort(()=>Math.random()-.5)}
@@ -979,7 +1048,7 @@ function listenSpeech(){
 function setupMemory(){
   let small=DATA.slice(0,6);memoryCards=[];
   small.forEach((d,n)=>{
-    let answer = d.alts ? d.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang) : d.a;
+    let answer = d.alts ? d.alts[0].replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang) : d.a;
     memoryCards.push({pair:n,text:d.qSie,type:"q",open:false,done:false});
     memoryCards.push({pair:n,text:answer,type:"a",open:false,done:false})
   });
