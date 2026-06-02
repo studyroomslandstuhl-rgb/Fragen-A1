@@ -190,9 +190,30 @@ let currentQuestion="", currentAnswer="", examStartTime=null, examTimer=null, ex
 
 function $(id){return document.getElementById(id)}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function item(){return DATA[questionOrder[i%questionOrder.length] ?? (i%DATA.length)]}
+function item(){
+  if(!Array.isArray(questionOrder) || !questionOrder.length){
+    questionOrder = DATA.map((_,idx)=>idx);
+  }
+  let rawIdx = questionOrder[i % questionOrder.length];
+  let idx = Number.isInteger(rawIdx) && rawIdx >= 0 && rawIdx < DATA.length ? rawIdx : (i % DATA.length);
+  return DATA[idx] || DATA[0];
+}
 function key(){return "A1_"+course+"_"+student}
 function profileStorageKey(){return "A1_SAVED_PROFILE"}
+function sanitizeState(){
+  if(!EXERCISES.includes(game)) game = "learn";
+  if(!Number.isInteger(i) || i < 0) i = 0;
+  if(!Array.isArray(questionOrder) || !questionOrder.length){
+    questionOrder = DATA.map((_,idx)=>idx);
+  }
+  questionOrder = questionOrder
+    .map(Number)
+    .filter(idx => Number.isInteger(idx) && idx >= 0 && idx < DATA.length);
+  if(!questionOrder.length) questionOrder = DATA.map((_,idx)=>idx);
+  if(i >= DATA.length) i = 0;
+  if(!studentPerson || typeof studentPerson !== "object") studentPerson = {...DEFAULT_PROFILE};
+  studentPerson = {...DEFAULT_PROFILE, ...studentPerson};
+}
 
 function initLogin(){
   $("country").innerHTML = '<option value="">-- Heimatland wählen --</option>' + Object.keys(COUNTRIES).map(c=>`<option value="${c}">${c}</option>`).join("");
@@ -258,11 +279,28 @@ function saveLocal(){
     localStorage.setItem(regKey,JSON.stringify(list));
   }
 }
-function loadLocal(){let raw=localStorage.getItem(key()); if(raw){let x=JSON.parse(raw); score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;game=x.game||game;questionOrder=x.questionOrder||questionOrder;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{};studentPerson=x.studentPerson||studentPerson;}}
-function restoreSession(){
-  initLogin();
-  let active=localStorage.getItem("A1_ACTIVE_SESSION");
-  if(active){let raw=localStorage.getItem(active); if(raw){let x=JSON.parse(raw); student=x.student;course=x.course;studentPerson=x.studentPerson||studentPerson;score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;game=x.game||"learn";questionOrder=x.questionOrder||DATA.map((_,idx)=>idx);answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{};$("login").classList.add("hidden");$("app").classList.remove("hidden");$("hello").innerText="Hallo, "+studentPerson.fname+"!";updateAll();render();}}
+function loadLocal(){
+  let raw=localStorage.getItem(key());
+  if(raw){
+    try{
+      let x=JSON.parse(raw);
+      score=x.score||0;
+      attempts=x.attempts||0;
+      correct=x.correct||0;
+      i=Number.isInteger(x.i)?x.i:0;
+      game=EXERCISES.includes(x.game)?x.game:game;
+      questionOrder=Array.isArray(x.questionOrder)?x.questionOrder:questionOrder;
+      answerHistory=Array.isArray(x.answerHistory)?x.answerHistory:[];
+      exerciseProgress=x.exerciseProgress||{};
+      studentPerson=x.studentPerson||studentPerson;
+      sanitizeState();
+    }catch(e){
+      console.warn("Alte gespeicherte Daten konnten nicht gelesen werden:", e);
+      sanitizeState();
+    }
+  }else{
+    sanitizeState();
+  }
 }
 
 function updateAll(){stats();updateStatsBox();updateExerciseTracker();saveLocal()}
@@ -300,12 +338,13 @@ function mode(m){
   helpWrongTries=0;
   responseTries=0;
   questionOrder=m==="learn"?DATA.map((_,idx)=>idx):shuffle(DATA.map((_,idx)=>idx));
+  sanitizeState();
   if(m==="memory")setupMemory();
   if(m==="exam")startExam();
   saveLocal();
   updateAll();
   render();
-  setTimeout(()=>$("game").scrollIntoView({behavior:"smooth",block:"start"}),50);
+  setTimeout(()=>$("game")?.scrollIntoView({behavior:"smooth",block:"start"}),50);
 }
 function normalizeGermanNumber(t){return (t||"").replace(/\beins\b/g,"1").replace(/\bein\b/g,"1").replace(/\bzwei\b/g,"2").replace(/\bdrei\b/g,"3").replace(/\bvier\b/g,"4").replace(/\bfünf\b/g,"5").replace(/\bfuenf\b/g,"5").replace(/\bsechs\b/g,"6").replace(/\bsieben\b/g,"7").replace(/\bacht\b/g,"8").replace(/\bneun\b/g,"9").replace(/\bzehn\b/g,"10")}
 function clean(t){return normalizeGermanNumber(String(t||"").toLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ß/g,"ss").replace(/[.,!?;:]/g,"").replace(/\s+/g," ").trim()}
@@ -383,6 +422,8 @@ function markResponse(good,userAnswer=""){
 function escapeHtml(s){return String(s).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
 
 function render(){
+ try{
+
  let x=item(),q=x.qSie,html=`<h2>${EXERCISE_NAMES[game]}</h2>`;
  if(!["listen","listenrespond"].includes(game))html+=`<p class="small">Thema: ${x.topic}</p>`;
  if(game==="learn"){
@@ -402,6 +443,11 @@ function render(){
  if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder Antwort schreiben..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
  if(game==="exam"){html+=`<div id="examTimer" class="small"></div><p>Bilde die passende Frage zu diesem Begriff:</p><div class="big">🔎 ${x.topic}</div><input id="ans" placeholder="Passende Frage schreiben..."><button onclick="markExam(okQuestion($('ans').value),$('ans').value)">Überprüfen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenExamQuestion()">🎤 Frage sprechen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small><strong>Hilfe:</strong> '+examQuestionHint()+'</div>'">Hilfe</button><button class="success hidden" id="nextExamBtn" onclick="nextExam()">⏭️ Nächste Prüfungsaufgabe</button><p id="heard"></p><div id="feedback"></div>`; setTimeout(updateExamTimer,0)}
  $("game").innerHTML=html; if(game==="memory")renderMemoryGrid(); stats(); updateStatsBox();
+ }catch(e){
+  console.error(e);
+  const g=$("game");
+  if(g) g.innerHTML = `<h2>Fehler</h2><div class="no">${escapeHtml(e.message||String(e))}</div><button onclick="localStorage.removeItem('A1_ACTIVE_SESSION');location.reload()">Zur Anmeldung zurück</button>`;
+ }
 }
 function nextLearn(){if(i>=DATA.length-1){exerciseProgress.learn=100;updateAll();$("game").innerHTML="<h2>📚 Lernen</h2><div class='ok'>Lernen abgeschlossen.</div><button class='success' onclick='goNextExercise()'>Weiter</button>"}else{i++;exerciseProgress.learn=Math.round(i/DATA.length*100);render()}}
 function chooseWord(btn){let clone=btn.cloneNode(true);clone.onclick=()=>{clone.remove();btn.disabled=false;btn.style.opacity=1};$("chosen").appendChild(clone);btn.disabled=true;btn.style.opacity=.4}
