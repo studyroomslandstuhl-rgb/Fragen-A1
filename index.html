@@ -533,27 +533,24 @@ tr:hover {
 
 <main>
 <section id="login" class="card">
-<h2>🎓 Willkommen</h2>
+<h2>🎓 Anmeldung</h2>
+<p class="small">Bitte alle Felder ausfüllen. Die Übungen werden mit diesen Daten angepasst.</p>
+<div class="form-group"><label>Vorname *</label><input id="fname" required placeholder="z.B. Alisa"></div>
+<div class="form-group"><label>Nachname *</label><input id="lname" required placeholder="z.B. Feldbusch"></div>
+<div class="form-group"><label>Kurscode *</label><input id="course" required placeholder="z.B. A1-Montag"></div>
 <div class="form-group">
-  <label>Dein Name *</label>
-  <input id="name" placeholder="z.B. Ahmed oder Maria">
-</div>
-<div class="form-group">
-  <label>Kurscode *</label>
-  <input id="course" placeholder="z.B. A1-Montag">
-</div>
-<div class="form-group">
-  <label>Dein Geschlecht (optional)</label>
-  <select id="gender">
+  <label>Geschlecht *</label>
+  <select id="gender" required>
     <option value="">-- Wählen --</option>
-    <option value="m">Männlich (er/sein)</option>
-    <option value="f">Weiblich (sie/ihr)</option>
+    <option value="m">Männlich</option>
+    <option value="f">Weiblich</option>
   </select>
 </div>
 <div class="form-group">
-  <label>Dein Heimatland (optional)</label>
-  <select id="country">
+  <label>Heimatland *</label>
+  <select id="country" required>
     <option value="">-- Wählen --</option>
+    <option value="Deutschland">Deutschland</option>
     <option value="Syrien">Syrien</option>
     <option value="Ukraine">Ukraine</option>
     <option value="Afghanistan">Afghanistan</option>
@@ -579,6 +576,44 @@ tr:hover {
     <option value="USA">USA</option>
     <option value="China">China</option>
     <option value="Japan">Japan</option>
+  </select>
+</div>
+<div class="form-group"><label>Sprache *</label><input id="lang" required placeholder="z.B. Russisch"></div>
+<div class="form-group"><label>Wohnort in Deutschland *</label><input id="city" required placeholder="z.B. Leipzig"></div>
+<div class="form-group"><label>Alter *</label><input id="age" required type="number" min="1" max="120" placeholder="z.B. 35"></div>
+<div class="form-group"><label>Geburtsort *</label><input id="birthplace" required placeholder="z.B. Moskau"></div>
+<div class="form-group">
+  <label>Kinder *</label>
+  <select id="children" required>
+    <option value="">-- Wählen --</option>
+    <option value="keine Kinder">keine Kinder</option>
+    <option value="ein Kind">ein Kind</option>
+    <option value="zwei Kinder">zwei Kinder</option>
+    <option value="drei Kinder">drei Kinder</option>
+    <option value="vier Kinder">vier Kinder</option>
+  </select>
+</div>
+<div class="form-group">
+  <label>Familienstand *</label>
+  <select id="marital" required>
+    <option value="">-- Wählen --</option>
+    <option value="verheiratet">verheiratet</option>
+    <option value="ledig">ledig</option>
+    <option value="geschieden">geschieden</option>
+    <option value="verwitwet">verwitwet</option>
+    <option value="nicht verheiratet">nicht verheiratet</option>
+  </select>
+</div>
+<div class="form-group">
+  <label>Wie geht es dir? *</label>
+  <select id="feeling" required>
+    <option value="">-- Wählen --</option>
+    <option value="sehr gut">sehr gut</option>
+    <option value="gut">gut</option>
+    <option value="super">super</option>
+    <option value="nicht so gut">nicht so gut</option>
+    <option value="schlecht">schlecht</option>
+    <option value="es geht">es geht</option>
   </select>
 </div>
 <div class="flex-center">
@@ -711,19 +746,20 @@ const DATA = [
   {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
   {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",answerTemplates:["Ich komme aus {origin}.","Ich bin aus {origin}.","Aus {origin}."]},
   {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",answerTemplates:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}.","{lang}.","{lang} und ein bisschen Deutsch."]},
-  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen oder Nachnamen.",qDu:"Buchstabiere bitte deinen Vornamen oder Nachnamen.",answerTemplates:["{spell_fname}","{spell_lname}","{spell_fname_space}","{spell_lname_space}"]},
-  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:["Es geht mir sehr gut.","Es geht mir gut.","Super.","Es geht mir nicht so gut.","Es geht mir schlecht.","Es geht.","Gut.","Nicht so gut."]},
-  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",answerTemplates:["Ja, ich habe ein Kind.","Ja, ich habe zwei Kinder.","Ja, ich habe drei Kinder.","Ja, ich habe vier Kinder.","Nein, ich habe keine Kinder."]},
-  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",answerTemplates:["Ja, ich bin verheiratet.","Nein, ich bin ledig.","Nein, ich bin verwitwet.","Nein, ich bin geschieden.","Nein, ich bin nicht verheiratet."]},
+  {topic:"Vorname buchstabieren",spellType:"fname",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",answerTemplates:["{spell_fname}","{spell_fname_space}"]},
+  {topic:"Nachname buchstabieren",spellType:"lname",qSie:"Buchstabieren Sie bitte Ihren Nachnamen.",qDu:"Buchstabiere bitte deinen Nachnamen.",answerTemplates:["{spell_lname}","{spell_lname_space}"]},
+  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:["Es geht mir {feeling}.","{feeling}.","Es geht.","Gut.","Nicht so gut."]},
+  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",answerTemplates:["Ja, ich habe {children}.","Ich habe {children}.","Nein, ich habe keine Kinder."]},
+  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",answerTemplates:["Ja, ich bin verheiratet.","Ich bin verheiratet.","Nein, ich bin {marital}.","Ich bin {marital}.","Nein."]},
   {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",answerTemplates:["Ich wohne in {city}.","In {city}."]},
   {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",answerTemplates:["Ich bin {age} Jahre alt.","{age} Jahre alt.","Ich bin {age}."]},
   {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",answerTemplates:["Ich bin in {birthplace} geboren.","In {birthplace}."]}
 ];
 
-const EXERCISES = ['learn', 'qa', 'quickfire', 'listen', 'listenrespond', 'dictation', 'puzzle', 'speak', 'memory', 'exam'];
+const EXERCISES = ['learn', 'qa', 'speak', 'puzzle', 'dictation', 'memory', 'quickfire', 'listen', 'listenrespond', 'exam'];
 const EXERCISE_NAMES = {
   learn: '📚 Lernen',
-  qa: '🗣️ Q&A',
+  qa: '🗣️ Fragen beantworten',
   quickfire: '⚡ Blitzfeuer',
   listen: '🎧 Hören',
   listenrespond: '🎤 Hören & Antworten',
@@ -742,19 +778,20 @@ let currentQuestion = null;
 let currentAnswer = null;
 let responseTries = 0;
 let examStartTime = null, examTimer = null, examCorrect = 0, examAttempts = 0, examFinished = false;
+let questionOrder = DATA.map((_,idx)=>idx);
 
 function $(id){return document.getElementById(id)}
-function item(){return DATA[i%DATA.length]}
+function item(){return DATA[questionOrder[i%questionOrder.length] ?? (i%DATA.length)]}
 function key(){return "A1_"+course+"_"+student}
-function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,gender,country,score,attempts,correct,i,date:new Date().toLocaleString(),answerHistory,exerciseProgress}));stats()}
-function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}}}
+function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,gender,country,score,attempts,correct,i,game,questionOrder,studentPerson,date:new Date().toLocaleString(),answerHistory,exerciseProgress}));localStorage.setItem("A1_ACTIVE_SESSION", key());stats()}
+function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;game=x.game||game;questionOrder=x.questionOrder||DATA.map((_,idx)=>idx);answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}; if(x.studentPerson) studentPerson=x.studentPerson;}}
 function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
 function trainingExercises(){return EXERCISES.filter(ex=>ex!=="exam");}
 function allTrainingComplete(){return trainingExercises().every(ex => (exerciseProgress[ex]||0) >= 90);}
 function formatTime(ms){let sec=Math.max(0,Math.floor(ms/1000));let m=Math.floor(sec/60);let s=sec%60;return `${m}:${String(s).padStart(2,"0")}`;}
 function examScore(){let acc = examAttempts>0 ? (examCorrect/examAttempts) : 0; let elapsed = examStartTime ? Math.floor((Date.now()-examStartTime)/1000) : 0; return Math.max(0, Math.round(acc*1000 - elapsed));}
 function updateExamTimer(){let box=$("examTimer"); if(box && examStartTime){let elapsed=Date.now()-examStartTime; let acc=examAttempts>0?Math.round(examCorrect*100/examAttempts):0; box.innerHTML=`⏱️ Zeit: <strong>${formatTime(elapsed)}</strong> · 🎯 Genauigkeit: <strong>${acc}%</strong> · 🏆 Prüfungswert: <strong>${examScore()}</strong>`;}}
-function startExam(){i=0; examStartTime=Date.now(); examCorrect=0; examAttempts=0; examFinished=false; if(examTimer) clearInterval(examTimer); examTimer=setInterval(updateExamTimer,1000);}
+function startExam(){i=0; questionOrder=shuffle(DATA.map((_,idx)=>idx)); examStartTime=Date.now(); examCorrect=0; examAttempts=0; examFinished=false; if(examTimer) clearInterval(examTimer); examTimer=setInterval(updateExamTimer,1000);}
 function saveExamResult(){let elapsedMs=Date.now()-examStartTime; let accuracy=examAttempts>0?Math.round(examCorrect*100/examAttempts):0; let result={name:student,course:course,score:examScore(),examScore:examScore(),examTimeMs:elapsedMs,examTime:formatTime(elapsedMs),examAccuracy:accuracy,examCorrect:examCorrect,examAttempts:examAttempts,total:DATA.length,date:new Date().toLocaleString()}; let board=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]"); board.push(result); board.sort((a,b)=>(b.examScore||b.score||0)-(a.examScore||a.score||0)); localStorage.setItem("A1_EXAM_RESULTS",JSON.stringify(board)); return result;}
 function finishExam(){if(examFinished)return; examFinished=true; if(examTimer) clearInterval(examTimer); let result=saveExamResult(); exerciseProgress.exam=100; saveLocal(); updateExerciseTracker(); renderGameButtons(); $("game").innerHTML=`<h2>🏆 Prüfung abgeschlossen!</h2><div class="ok">✅ Ergebnis veröffentlicht.</div><div class="stats"><strong>Zeit:</strong> ${result.examTime}<br><strong>Genauigkeit:</strong> ${result.examAccuracy}% (${result.examCorrect}/${result.examAttempts})<br><strong>Prüfungswert:</strong> ${result.examScore}</div><button onclick="showLeaderboard()">🏅 Öffentliche Ergebnisse ansehen</button>`;}
 function markExam(good,userAnswer=""){examAttempts++; attempts++; answerHistory.push({question:item().topic, correct:good, answer:userAnswer, acceptedAnswers:answerVariants(), timestamp:new Date().toLocaleTimeString(), exam:true}); if(good){examCorrect++; correct++; score+=10; $("feedback").innerHTML="<div class='ok'>✔ Richtig!</div>";} else {$("feedback").innerHTML="<div class='no'>❌ Nicht richtig.</div>";} updateExamTimer(); saveLocal(); let next=$("nextExamBtn"); if(next) next.style.display="inline-block";}
@@ -780,6 +817,9 @@ function fillTemplate(t, p=studentPerson){
           .replaceAll("{city}", p.city || DEFAULT_PROFILE.city)
           .replaceAll("{birthplace}", p.birthplace || DEFAULT_PROFILE.birthplace)
           .replaceAll("{age}", p.age || DEFAULT_PROFILE.age)
+          .replaceAll("{children}", p.children || DEFAULT_PROFILE.children)
+          .replaceAll("{marital}", p.marital || DEFAULT_PROFILE.marital)
+          .replaceAll("{feeling}", p.feeling || "gut")
           .replaceAll("{spell_fname}", spell)
           .replaceAll("{spell_lname}", spellLast)
           .replaceAll("{spell_fname_space}", spellSpace)
@@ -797,40 +837,97 @@ function generatePersonForAnswers(){
 }
 
 function buildStudentPerson(){
-  let raw = student.trim() || DEFAULT_PROFILE.full;
-  let parts = raw.split(/\s+/).filter(Boolean);
-  let origin = country || DEFAULT_PROFILE.origin;
+  let fname = ($("fname")?.value || DEFAULT_PROFILE.fname).trim();
+  let lname = ($("lname")?.value || DEFAULT_PROFILE.lname).trim();
+  let origin = ($("country")?.value || DEFAULT_PROFILE.origin).trim();
   let meta = countryMeta(origin);
-  let fname = parts[0] || DEFAULT_PROFILE.fname;
-  let lname = parts.slice(1).join(" ") || DEFAULT_PROFILE.lname;
   return {
     fname,
     lname,
     full: `${fname} ${lname}`.trim(),
     origin,
-    lang: meta.lang,
-    city: meta.city,
-    birthplace: meta.birthplace,
-    age: DEFAULT_PROFILE.age,
-    children: DEFAULT_PROFILE.children,
-    marital: DEFAULT_PROFILE.marital
+    lang: ($("lang")?.value || meta.lang || DEFAULT_PROFILE.lang).trim(),
+    city: ($("city")?.value || DEFAULT_PROFILE.city).trim(),
+    birthplace: ($("birthplace")?.value || meta.birthplace || DEFAULT_PROFILE.birthplace).trim(),
+    age: ($("age")?.value || DEFAULT_PROFILE.age).trim(),
+    children: ($("children")?.value || DEFAULT_PROFILE.children).trim(),
+    marital: ($("marital")?.value || DEFAULT_PROFILE.marital).trim(),
+    feeling: ($("feeling")?.value || "gut").trim()
   };
 }
 
-function start(){
-  student=$("name").value.trim() || DEFAULT_PROFILE.full; 
-  course=$("course").value.trim() || "A1"; 
-  gender=$("gender").value; 
-  country=$("country").value || DEFAULT_PROFILE.origin;
-  loadLocal(); 
-  studentPerson = buildStudentPerson();
+function applyProfileToLogin(p){
+  if(!p) return;
+  if($("fname")) $("fname").value=p.fname||"";
+  if($("lname")) $("lname").value=p.lname||"";
+  if($("country")) $("country").value=p.origin||"";
+  if($("lang")) $("lang").value=p.lang||"";
+  if($("city")) $("city").value=p.city||"";
+  if($("birthplace")) $("birthplace").value=p.birthplace||"";
+  if($("age")) $("age").value=p.age||"";
+  if($("children")) $("children").value=p.children||"";
+  if($("marital")) $("marital").value=p.marital||"";
+  if($("feeling")) $("feeling").value=p.feeling||"";
+}
+
+function validateLogin(){
+  let required=["fname","lname","course","gender","country","lang","city","age","birthplace","children","marital","feeling"];
+  for(let id of required){
+    let el=$(id);
+    if(!el || !String(el.value||"").trim()){
+      alert("Bitte alle Pflichtfelder ausfüllen.");
+      if(el) el.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
+function enterApp(){
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
-  $("hello").innerText="Hallo, "+studentPerson.fname+"!";
+  $("hello").innerText="Hallo, "+(studentPerson.fname||student)+"!";
   stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons(); render();
 }
 
+function start(){
+  if(!validateLogin()) return;
+  studentPerson = buildStudentPerson();
+  student = studentPerson.full;
+  course=$("course").value.trim(); 
+  gender=$("gender").value; 
+  country=studentPerson.origin;
+  game="learn"; i=0; questionOrder=DATA.map((_,idx)=>idx);
+  loadLocal();
+  if(!studentPerson || !studentPerson.fname) studentPerson = buildStudentPerson();
+  saveLocal();
+  enterApp();
+}
+
+function restoreSession(){
+  let active=localStorage.getItem("A1_ACTIVE_SESSION");
+  if(!active) return false;
+  let raw=localStorage.getItem(active);
+  if(!raw) return false;
+  try{
+    let x=JSON.parse(raw);
+    student=x.student||""; course=x.course||"A1"; gender=x.gender||""; country=x.country||"";
+    score=x.score||0; attempts=x.attempts||0; correct=x.correct||0; i=x.i||0; game=x.game||"learn";
+    questionOrder=x.questionOrder||DATA.map((_,idx)=>idx);
+    answerHistory=x.answerHistory||[]; exerciseProgress=x.exerciseProgress||{}; studentPerson=x.studentPerson||{};
+    enterApp();
+    return true;
+  }catch(e){return false;}
+}
+
+function setupLoginHelpers(){
+  let c=$("country");
+  if(c){c.onchange=()=>{let meta=countryMeta(c.value); if($("lang")&&!$("lang").value) $("lang").value=meta.lang; if($("birthplace")&&!$("birthplace").value) $("birthplace").value=meta.birthplace;};}
+}
+
+window.addEventListener("DOMContentLoaded",()=>{setupLoginHelpers(); restoreSession();});
+
 function logout(){
-  if(confirm("Wirklich abmelden?")){location.reload()}
+  if(confirm("Wirklich abmelden?")){localStorage.removeItem("A1_ACTIVE_SESSION"); location.reload()}
 }
 
 function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
@@ -869,8 +966,11 @@ function mode(m){
     return;
   }
   game=m;
-  if(m==="exam"){ startExam(); } else { i=0; }
+  i=0;
+  if(m==="exam"){ startExam(); }
+  else { questionOrder = (m==="learn") ? DATA.map((_,idx)=>idx) : shuffle(DATA.map((_,idx)=>idx)); }
   if(m==="memory")setupMemory();
+  saveLocal();
   render();
 }
 
@@ -914,23 +1014,38 @@ function clean(t){
 function answerVariants(x=item(), p=studentPerson){
   let templates = x.answerTemplates || x.alts || (x.a ? [x.a] : []);
   let variants = templates.map(t => fillTemplate(t, p));
-  if(x.topic==="Buchstabieren"){
-    let f = (p.fname || DEFAULT_PROFILE.fname);
-    let l = (p.lname || DEFAULT_PROFILE.lname);
-    [f,l].forEach(n=>{
-      variants.push(
-        n.toUpperCase().split("").join("-"),
-        n.toLowerCase().split("").join(" "),
-        n.toUpperCase().split("").join(" "),
-        n
-      );
-    });
+  if(x.topic==="Name"){
+    let f=p.fname||DEFAULT_PROFILE.fname, l=p.lname||DEFAULT_PROFILE.lname, full=(p.full||`${f} ${l}`).trim();
+    variants.push(`Ich heiße ${f}.`, `Ich heiße ${full}.`, `Ich bin ${f}.`, `Ich bin ${full}.`, `Mein Name ist ${f}.`, `Mein Name ist ${full}.`, f, full);
+  }
+  if(x.topic==="Kinder"){
+    let ch=p.children||DEFAULT_PROFILE.children;
+    variants = ch.includes("keine") ? ["Nein, ich habe keine Kinder.", "Ich habe keine Kinder.", "Nein."] : [`Ja, ich habe ${ch}.`, `Ich habe ${ch}.`, "Ja."];
+  }
+  if(x.topic==="Familienstand"){
+    let m=p.marital||DEFAULT_PROFILE.marital;
+    variants = m==="verheiratet" ? ["Ja, ich bin verheiratet.", "Ich bin verheiratet.", "Ja."] : [`Nein, ich bin ${m}.`, `Ich bin ${m}.`, "Nein."];
+  }
+  if(x.topic==="Befinden"){
+    let f=p.feeling||"gut";
+    variants = f==="es geht" ? ["Es geht."] : f==="super" ? ["Super.", "Es geht mir super."] : [`Es geht mir ${f}.`, `${f}.`];
+  }
+  if(x.spellType){
+    let n = x.spellType === "lname" ? (p.lname || DEFAULT_PROFILE.lname) : (p.fname || DEFAULT_PROFILE.fname);
+    variants.push(n.toUpperCase().split("").join("-"), n.toLowerCase().split("").join(" "), n.toUpperCase().split("").join(" "), n);
   }
   return [...new Set(variants.filter(Boolean))];
 }
 function ok(user,answer){
   let u=clean(user);
   let variants = answer ? [answer] : answerVariants();
+  let x=item();
+  if(x.spellType){
+    let target = x.spellType === "lname" ? (studentPerson.lname||DEFAULT_PROFILE.lname) : (studentPerson.fname||DEFAULT_PROFILE.fname);
+    let compactUser = clean(user).replace(/[\s-]/g,"");
+    let compactTarget = clean(target).replace(/[\s-]/g,"");
+    if(compactUser === compactTarget) return true;
+  }
   return variants.some(v => {
     let a=clean(v);
     if(!u || !a) return false;
@@ -977,23 +1092,52 @@ function mark(good, userAnswer=""){
     $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Mögliche Antwort: <strong>"+getAnswer()+"</strong><br><span class='small'>Auch akzeptiert: "+answerVariants().join(" · ")+"</span></div>";
   }
   saveLocal(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
-  showAdvanceButton(good);
+  if(game!=="memory") showAdvanceButton(good);
 }
 function getAnswer(){
-  return answerVariants()[0] || "...";
-}
-function getRandomizedAnswers(){
-  let x = item();
-  let correctAnswer = getAnswer();
-  let otherAnswers = [];
-  let guard = 0;
-  while(otherAnswers.length < 3 && guard < 30){
-    guard++;
-    let otherPerson = generatePersonForAnswers();
-    let otherAnswer = answerVariants(x, otherPerson)[0];
-    if(otherAnswer && clean(otherAnswer)!==clean(correctAnswer) && !otherAnswers.some(o=>clean(o)===clean(otherAnswer))){ otherAnswers.push(otherAnswer); }
+  let x=item();
+  let vars=answerVariants();
+  if(x.topic==="Kinder"){
+    if((studentPerson.children||"").includes("keine")) return "Nein, ich habe keine Kinder.";
+    return "Ja, ich habe "+studentPerson.children+".";
   }
-  return shuffle([correctAnswer, ...otherAnswers]);
+  if(x.topic==="Familienstand"){
+    if(studentPerson.marital==="verheiratet") return "Ja, ich bin verheiratet.";
+    return "Nein, ich bin "+studentPerson.marital+".";
+  }
+  if(x.topic==="Befinden"){
+    let f=studentPerson.feeling||"gut";
+    if(f==="es geht") return "Es geht.";
+    if(f==="super") return "Super.";
+    return "Es geht mir "+f+".";
+  }
+  return vars[0] || "...";
+}
+function wrongAnswerVariants(x=item()){
+  let a=getAnswer();
+  let p=studentPerson;
+  let fname=p.fname||DEFAULT_PROFILE.fname, full=p.full||fname, origin=p.origin||DEFAULT_PROFILE.origin, city=p.city||DEFAULT_PROFILE.city, age=p.age||DEFAULT_PROFILE.age, lang=p.lang||DEFAULT_PROFILE.lang, birth=p.birthplace||DEFAULT_PROFILE.birthplace;
+  let wrong=[];
+  if(x.topic==="Name") wrong=[`Ich heißt ${fname}.`,`Ich heißen ${fname}.`,`Ih heibe ${fname}.`,`Ich heiße aus ${fname}.`];
+  else if(x.topic==="Vorname") wrong=[`Mein Vorname sind ${fname}.`,`Ich Vorname ist ${fname}.`,`Mein Vorname heiße ${fname}.`];
+  else if(x.topic==="Nachname") wrong=[`Mein Nachname sind ${p.lname}.`,`Ich Nachname ist ${p.lname}.`,`Mein Nachname heiße ${p.lname}.`];
+  else if(x.topic==="Heimatland") wrong=[`Ich komme ${origin}.`,`Ich bin aus ${origin} kommen.`,`Ich komme von ${origin}.`,`Ich kommen aus ${origin}.`];
+  else if(x.topic==="Sprache") wrong=[`Ich sprechen ${lang}.`,`Ich spreche ${lang} Sprache.`,`Ich kann ${lang} und ein Deutsch.`,`Ich spreche ${lang} und bisschen Deutsch.`];
+  else if(x.spellType) wrong=[fname.split("").reverse().join(" "), full.replace(/\s+/g," "), `Ich heiße ${fname}.`];
+  else if(x.topic==="Befinden") wrong=["Ich geht gut.","Mir geht es ich gut.","Es gehen mir gut.","Ich bin gut gehen."];
+  else if(x.topic==="Kinder") wrong=["Ich bin keine Kinder.","Ich habe nicht Kinder.","Ich keine Kinder habe.","Kinder ich habe."];
+  else if(x.topic==="Familienstand") wrong=["Ich habe verheiratet.","Ich bin verheiraten.","Ich verheiratet.","Nein, ich habe ledig."];
+  else if(x.topic==="Wohnort") wrong=[`Ich wohnen in ${city}.`,`Ich wohne ${city}.`,`Ich wohnt in ${city}.`,`Ich bin wohnen in ${city}.`];
+  else if(x.topic==="Alter") wrong=[`Ich habe ${age} Jahre.`,`Ich bin ${age} alt Jahre.`,`Ich sind ${age} Jahre alt.`,`Ich habe ${age} alt.`];
+  else if(x.topic==="Geburtsort") wrong=[`Ich bin geboren in ${birth}.`,`Ich habe in ${birth} geboren.`,`Ich bin ${birth} geboren.`,`Ich wurde in ${birth}.`];
+  wrong=wrong.filter(w=>clean(w)!==clean(a));
+  while(wrong.length<3){let other=answerVariants(DATA[Math.floor(Math.random()*DATA.length)])[0]; if(other && clean(other)!==clean(a)) wrong.push(other);}
+  return shuffle([...new Set(wrong)]).slice(0,3);
+}
+
+function getRandomizedAnswers(){
+  let correctAnswer = getAnswer();
+  return shuffle([correctAnswer, ...wrongAnswerVariants()]);
 }
 
 function getCrossTopicAnswers(){
@@ -1018,7 +1162,7 @@ function responseHint(){
   if(x.topic==="Wohnort") return "Beginnen Sie zum Beispiel mit: Ich wohne in ...";
   if(x.topic==="Alter") return "Beginnen Sie zum Beispiel mit: Ich bin ... Jahre alt.";
   if(x.topic==="Geburtsort") return "Beginnen Sie zum Beispiel mit: Ich bin in ... geboren.";
-  if(x.topic==="Buchstabieren") return "Sagen oder schreiben Sie die Buchstaben einzeln, z. B. a l i s a.";
+  if(x.spellType) return "Sagen oder schreiben Sie die Buchstaben einzeln, z. B. a l i s a.";
   return "Hören Sie die Frage noch einmal und antworten Sie mit einem ganzen Satz.";
 }
 
@@ -1244,22 +1388,26 @@ function attachEventListeners(){
   // Puzzle events
   if(game === "puzzle"){
     let x = item();
-    let words = shuffle(x.qSie.replace("?"," ?").split(" "));
+    let words = shuffle(x.qSie.replace("?"," ?").split(/\s+/));
     let wordList = $("wordList");
-    wordList.innerHTML = words.map(w=>`<button class="word puzzle-word">${w}</button>`).join("");
+    wordList.innerHTML = words.map((w,idx)=>`<button class="word puzzle-word" data-idx="${idx}">${w}</button>`).join("");
     document.querySelectorAll(".puzzle-word").forEach(btn => {
       btn.onclick = () => {
+        if(btn.disabled) return;
         let chosen = $("chosen");
-        chosen.appendChild(btn.cloneNode(true));
+        let clone = btn.cloneNode(true);
+        clone.onclick = () => { btn.disabled=false; btn.style.opacity="1"; clone.remove(); };
+        chosen.appendChild(clone);
+        btn.disabled=true;
         btn.style.opacity="0.5";
       };
     });
     let checkPuzzle = $("checkPuzzleBtn");
     let resetPuzzle = $("resetPuzzleBtn");
     if(checkPuzzle) checkPuzzle.onclick = () => {
-      let chosen=$("chosen").innerText.trim().split(" ").filter(w=>w);
-      let correct=x.qSie.replace("?"," ?").split(" ");
-      if(JSON.stringify(chosen)===JSON.stringify(correct)){mark(true)}else{mark(false)}
+      let chosen=[...$("chosen").querySelectorAll("button")].map(b=>b.innerText.trim()).filter(Boolean).join(" ");
+      let correct=x.qSie.replace("?"," ?").replace(/\s+/g," ").trim();
+      if(clean(chosen)===clean(correct)){mark(true,chosen)}else{mark(false,chosen)}
     };
     if(resetPuzzle) resetPuzzle.onclick = () => render();
   }
@@ -1333,23 +1481,27 @@ function listenSpeech(){
 
 function setupMemory(){
   memoryCards=[];
-  for(let j=0;j<5;j++){
-    let x=DATA[j%DATA.length];
+  DATA.forEach((x,idx)=>{
+    let oldOrder=questionOrder, oldI=i;
+    questionOrder=DATA.map((_,j)=>j); i=idx;
     let ans=getAnswer();
-    memoryCards.push({text:x.qSie,open:false,done:false},{text:ans,open:false,done:false});
-  }
+    questionOrder=oldOrder; i=oldI;
+    memoryCards.push({pair:idx,type:"q",text:x.qSie,open:false,done:false},{pair:idx,type:"a",text:ans,open:false,done:false});
+  });
   memoryCards=shuffle(memoryCards);
+  first=null; lock=false;
 }
 
 function flip(idx){
-  if(lock||memoryCards[idx].done)return;
-  memoryCards[idx].open=!memoryCards[idx].open;
+  if(lock||memoryCards[idx].done||memoryCards[idx].open)return;
+  memoryCards[idx].open=true;
   if(first===null){first=idx;render();return}
   lock=true;
   setTimeout(()=>{
-    if(memoryCards[first].text===memoryCards[idx].text){
+    if(memoryCards[first].pair===memoryCards[idx].pair && memoryCards[first].type!==memoryCards[idx].type){
       memoryCards[first].done=memoryCards[idx].done=true;
       mark(true);
+      if(memoryCards.every(c=>c.done)){exerciseProgress.memory=100; saveLocal();}
       first=null;
     }else{
       memoryCards[first].open=memoryCards[idx].open=false;
@@ -1358,7 +1510,7 @@ function flip(idx){
     }
     lock=false;
     render();
-  },1000);
+  },900);
 }
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
