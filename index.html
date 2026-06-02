@@ -269,12 +269,26 @@ function updateAll(){stats();updateStatsBox();updateExerciseTracker();saveLocal(
 function stats(){$("statsLine").innerHTML=`⭐ Punkte: <b>${score}</b> · ✅ Richtig: <b>${correct}/${attempts}</b> (${attempts?Math.round(correct*100/attempts):0}%)`}
 function updateStatsBox(){$("statsBox").innerHTML=`<div class="stat"><div>Punkte</div><div class="num">${score}</div></div><div class="stat"><div>Richtig</div><div class="num">${correct}/${attempts}</div></div><div class="stat"><div>Genauigkeit</div><div class="num">${attempts?Math.round(correct*100/attempts):0}%</div></div><div class="stat"><div>Modus</div><div class="num">${EXERCISE_NAMES[game].split(" ")[0]}</div></div>`}
 function updateExerciseTracker(){
-  $("exerciseTracker").innerHTML=EXERCISES.map(ex=>{
+  $("exerciseTracker").innerHTML = EXERCISES.map(ex => {
     let locked = ex==="exam" && !allTrainingComplete();
-    let progress = exerciseProgress[ex]||0;
+    let progress = exerciseProgress[ex] || 0;
     let label = locked ? "🔒 gesperrt" : progress + "%";
-    return `<div class="exercise-item ${ex===game?'active':''} ${progress>=90?'completed':''} ${ex==='exam'?'exam':''}" onclick="${locked ? "alert('Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.')" : "mode('"+ex+"')"}"><div>${EXERCISE_NAMES[ex]}</div><div class="small">${label}</div></div>`;
+    return `<button type="button" class="exercise-item ${ex===game?'active':''} ${progress>=90?'completed':''} ${ex==='exam'?'exam':''}" data-exercise="${ex}" ${locked ? "disabled" : ""}>
+      <div>${EXERCISE_NAMES[ex]}</div>
+      <div class="small">${label}</div>
+    </button>`;
   }).join("");
+
+  document.querySelectorAll("[data-exercise]").forEach(btn => {
+    btn.onclick = () => {
+      const ex = btn.dataset.exercise;
+      if(ex==="exam" && !allTrainingComplete()){
+        alert("Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.");
+        return;
+      }
+      mode(ex);
+    };
+  });
 }
 function mode(m){
   if(m==="exam" && !allTrainingComplete()){
@@ -373,7 +387,7 @@ function render(){
  if(!["listen","listenrespond"].includes(game))html+=`<p class="small">Thema: ${x.topic}</p>`;
  if(game==="learn"){
   let ans=getAnswer(),alts=answerVariants(x).filter(a=>clean(a)!==clean(ans));
-  html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakText('${escapeHtml(ans)}')">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
+  html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakText(getAnswer())">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
  }
  if(game==="qa"){html+=`<div class="big">${q}</div><input id="ans" placeholder="Antwort schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small>Hilfe kommt erst nach dem zweiten falschen Versuch.</div>'">Hilfe</button><div id="feedback"></div>`}
  if(game==="speak"){html+=`<div class="big">${q}</div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenSpeech()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder Antwort schreiben..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
@@ -381,13 +395,13 @@ function render(){
   let words=shuffle(q.replace("?"," ?").split(/\s+/).filter(Boolean));
   html+=`<p>🧩 Baue die Frage richtig zusammen.</p><div id="chosen"></div><div id="wordList">${words.map(w=>`<button class="word" onclick="chooseWord(this)">${escapeHtml(w)}</button>`).join("")}</div><button onclick="checkPuzzle()">Überprüfen</button><button class="secondary" onclick="render()">Neu</button><div id="feedback"></div>`;
  }
- if(game==="dictation"){let ans=getAnswer();html+=`<p>✍️ Höre und schreibe die Antwort.</p><button onclick="speakText('${escapeHtml(ans)}')">🔊 Antwort hören</button><input id="ans" placeholder="Schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><div id="feedback"></div>`}
+ if(game==="dictation"){let ans=getAnswer();html+=`<p>✍️ Höre und schreibe die Antwort.</p><button onclick="speakText(getAnswer())">🔊 Antwort hören</button><input id="ans" placeholder="Schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><div id="feedback"></div>`}
  if(game==="memory"){html+=`<p>🃏 Finde Frage und passende Antwort.</p><div class="memory" id="memoryGrid"></div><div id="feedback"></div>`}
  if(game==="quickfire"){html+=`<div class="big">${q}</div><p>⚡ Wähle die richtige Antwort.</p>${getWrongQuickAnswers().map(a=>`<button type="button" class="option quiz-option" data-answer="${escapeHtml(a)}" onclick="quickfireClick(this)">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
  if(game==="listen"){html+=`<p>🎧 Höre die Frage. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button>${getCrossTopicAnswers().map(a=>`<button class="option" onclick="mark(ok(this.dataset.answer),this.dataset.answer)" data-answer="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
  if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder Antwort schreiben..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
  if(game==="exam"){html+=`<div id="examTimer" class="small"></div><p>Bilde die passende Frage zu diesem Begriff:</p><div class="big">🔎 ${x.topic}</div><input id="ans" placeholder="Passende Frage schreiben..."><button onclick="markExam(okQuestion($('ans').value),$('ans').value)">Überprüfen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenExamQuestion()">🎤 Frage sprechen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small><strong>Hilfe:</strong> '+examQuestionHint()+'</div>'">Hilfe</button><button class="success hidden" id="nextExamBtn" onclick="nextExam()">⏭️ Nächste Prüfungsaufgabe</button><p id="heard"></p><div id="feedback"></div>`; setTimeout(updateExamTimer,0)}
- $("game").innerHTML=html; if(game==="memory")renderMemoryGrid(); updateAll();
+ $("game").innerHTML=html; if(game==="memory")renderMemoryGrid(); stats(); updateStatsBox();
 }
 function nextLearn(){if(i>=DATA.length-1){exerciseProgress.learn=100;updateAll();$("game").innerHTML="<h2>📚 Lernen</h2><div class='ok'>Lernen abgeschlossen.</div><button class='success' onclick='goNextExercise()'>Weiter</button>"}else{i++;exerciseProgress.learn=Math.round(i/DATA.length*100);render()}}
 function chooseWord(btn){let clone=btn.cloneNode(true);clone.onclick=()=>{clone.remove();btn.disabled=false;btn.style.opacity=1};$("chosen").appendChild(clone);btn.disabled=true;btn.style.opacity=.4}
@@ -483,6 +497,14 @@ function closeLeaderboard(){$("leaderboardSection").classList.add("hidden");$("a
 function exportMe(){let data=JSON.stringify({student,course,score,attempts,correct,answerHistory,exerciseProgress,studentPerson},null,2);let blob=new Blob([data],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=student+"_"+course+".json";a.click()}
 function importFiles(e){let files=[...e.target.files],rows=[];files.forEach(f=>{let r=new FileReader();r.onload=ev=>{let d=JSON.parse(ev.target.result);rows.push(d);$("dashTable").innerHTML="<table><tr><th>Name</th><th>Kurs</th><th>Punkte</th><th>Richtig</th><th>Versuche</th></tr>"+rows.map(x=>`<tr><td>${x.student}</td><td>${x.course}</td><td>${x.score}</td><td>${x.correct}</td><td>${x.attempts}</td></tr>`).join("")+"</table>"};r.readAsText(f)})}
 function downloadCSV(){let rows=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");let csv="Name,Kurs,Wert,Zeit,Genauigkeit,Datum\n"+rows.map(e=>`${e.name},${e.course},${e.score},${e.time},${e.accuracy},${e.date}`).join("\n");let blob=new Blob([csv],{type:"text/csv"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="A1_Ergebnisse.csv";a.click()}
+
+
+window.addEventListener("error", e => {
+  const g = $("game");
+  if(g){
+    g.innerHTML = `<h2>Fehler</h2><div class="no">JavaScript-Fehler: ${escapeHtml(e.message || "Unbekannter Fehler")}</div><p class="small">${escapeHtml(e.filename||"")} ${e.lineno||""}</p>`;
+  }
+});
 
 window.addEventListener("load", restoreSession);
 </script>
