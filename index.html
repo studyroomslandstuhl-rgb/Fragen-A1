@@ -566,6 +566,19 @@ tr:hover {
     <option value="Eritrea">Eritrea</option>
     <option value="Ghana">Ghana</option>
     <option value="Nigeria">Nigeria</option>
+    <option value="Russland">Russland</option>
+    <option value="Algerien">Algerien</option>
+    <option value="Marokko">Marokko</option>
+    <option value="Tunesien">Tunesien</option>
+    <option value="Iran">Iran</option>
+    <option value="Pakistan">Pakistan</option>
+    <option value="Indien">Indien</option>
+    <option value="Frankreich">Frankreich</option>
+    <option value="Spanien">Spanien</option>
+    <option value="Italien">Italien</option>
+    <option value="USA">USA</option>
+    <option value="China">China</option>
+    <option value="Japan">Japan</option>
   </select>
 </div>
 <div class="flex-center">
@@ -642,54 +655,69 @@ tr:hover {
 </main>
 
 <script>
+const DEFAULT_PROFILE = {
+  fname: "Max",
+  lname: "Mustermann",
+  full: "Max Mustermann",
+  origin: "Deutschland",
+  lang: "Deutsch",
+  city: "Berlin",
+  birthplace: "Berlin",
+  age: "30",
+  children: "keine Kinder",
+  marital: "ledig"
+};
+
+const COUNTRY_INFO = {
+  "Deutschland": {lang:"Deutsch", city:"Berlin", birthplace:"Berlin", surnames:["Müller","Schmidt","Schneider","Fischer","Weber"]},
+  "Russland": {lang:"Russisch", city:"Moskau", birthplace:"Moskau", surnames:["Ivanov","Petrov","Smirnov","Sokolov","Kuznetsov"]},
+  "Algerien": {lang:"Arabisch", city:"Algier", birthplace:"Algier", surnames:["Bouzid","Benali","Mansouri","Amari","Haddad"]},
+  "Syrien": {lang:"Arabisch", city:"Damaskus", birthplace:"Damaskus", surnames:["Hassan","Abbas","Khalil","Saleh","Ali"]},
+  "Ukraine": {lang:"Ukrainisch", city:"Kiew", birthplace:"Kiew", surnames:["Kovalenko","Shevchenko","Ivanenko","Petrenko","Bondarenko"]},
+  "Afghanistan": {lang:"Dari", city:"Kabul", birthplace:"Kabul", surnames:["Ahmadzai","Mohammadi","Khan","Hosseini","Karimi"]},
+  "Irak": {lang:"Arabisch", city:"Bagdad", birthplace:"Bagdad", surnames:["Ali","Hassan","Ibrahim","Karim","Rashid"]},
+  "Türkei": {lang:"Türkisch", city:"Istanbul", birthplace:"Istanbul", surnames:["Özdemir","Aydın","Kaya","Demir","Yılmaz"]},
+  "Polen": {lang:"Polnisch", city:"Warschau", birthplace:"Warschau", surnames:["Kowalski","Nowak","Kamiński","Lewandowski","Zieliński"]},
+  "Rumänien": {lang:"Rumänisch", city:"Bukarest", birthplace:"Bukarest", surnames:["Popescu","Ionescu","Georgescu","Dumitru","Mihai"]},
+  "Bulgarien": {lang:"Bulgarisch", city:"Sofia", birthplace:"Sofia", surnames:["Ivanov","Dimitrov","Nikolov","Petrov","Atanasov"]},
+  "Somalia": {lang:"Somali", city:"Mogadischu", birthplace:"Mogadischu", surnames:["Hassan","Mohammed","Abdi","Ali","Ibrahim"]},
+  "Eritrea": {lang:"Tigrinya", city:"Asmara", birthplace:"Asmara", surnames:["Tekle","Solomon","Assefa","Desta","Tesfay"]},
+  "Ghana": {lang:"Twi", city:"Accra", birthplace:"Accra", surnames:["Mensah","Owusu","Boateng","Addae","Acquah"]},
+  "Nigeria": {lang:"Yoruba", city:"Lagos", birthplace:"Lagos", surnames:["Okafor","Adeyemi","Okonkwo","Oluwaseun","Adekunle"]},
+  "Marokko": {lang:"Arabisch", city:"Rabat", birthplace:"Rabat", surnames:["El Amrani","Bennani","Alaoui","Berrada","Fassi"]},
+  "Tunesien": {lang:"Arabisch", city:"Tunis", birthplace:"Tunis", surnames:["Trabelsi","Ben Salah","Mansouri","Jaziri","Ayari"]},
+  "Iran": {lang:"Persisch", city:"Teheran", birthplace:"Teheran", surnames:["Hosseini","Ahmadi","Karimi","Mohammadi","Rahimi"]},
+  "Pakistan": {lang:"Urdu", city:"Islamabad", birthplace:"Islamabad", surnames:["Khan","Ahmed","Ali","Hussain","Malik"]},
+  "Indien": {lang:"Hindi", city:"Neu-Delhi", birthplace:"Neu-Delhi", surnames:["Sharma","Patel","Singh","Kumar","Gupta"]},
+  "Frankreich": {lang:"Französisch", city:"Paris", birthplace:"Paris", surnames:["Martin","Bernard","Dubois","Thomas","Robert"]},
+  "Spanien": {lang:"Spanisch", city:"Madrid", birthplace:"Madrid", surnames:["García","Fernández","López","Martínez","Sánchez"]},
+  "Italien": {lang:"Italienisch", city:"Rom", birthplace:"Rom", surnames:["Rossi","Russo","Ferrari","Esposito","Bianchi"]},
+  "USA": {lang:"Englisch", city:"New York", birthplace:"New York", surnames:["Smith","Johnson","Williams","Brown","Jones"]},
+  "China": {lang:"Chinesisch", city:"Peking", birthplace:"Peking", surnames:["Wang","Li","Zhang","Liu","Chen"]},
+  "Japan": {lang:"Japanisch", city:"Tokio", birthplace:"Tokio", surnames:["Sato","Suzuki","Takahashi","Tanaka","Watanabe"]}
+};
+
 const NAMES = {
-  m: ["Ahmed", "Ali", "Hassan", "Mohammed", "Ibrahim", "Khalid", "Omar", "Youssef", "Samir", "Karim", "Volodymyr", "Ivan", "Gheorghe", "Alexandru"],
-  f: ["Maria", "Fatima", "Layla", "Aisha", "Zara", "Leila", "Hana", "Yasmin", "Noor", "Sara", "Olena", "Nataliia", "Ioana", "Alina"]
+  m: ["Ahmed", "Ali", "Hassan", "Mohammed", "Ibrahim", "Khalid", "Omar", "Youssef", "Samir", "Karim", "Ivan", "Alexej", "Said", "Max"],
+  f: ["Maria", "Fatima", "Layla", "Aisha", "Zara", "Leila", "Hana", "Yasmin", "Noor", "Sara", "Olena", "Nataliia", "Alina", "Anna"]
 };
 
-const SURNAMES = {
-  "syrien": ["Yilmaz", "Hassan", "Abbas", "Khalil", "Saleh"],
-  "ukraine": ["Kovalenko", "Shevchenko", "Ivanov", "Petrov", "Zelensky"],
-  "rumänien": ["Popescu", "Ionescu", "Georgescu", "Dumitru", "Mihai"],
-  "afghanistan": ["Ahmed", "Ali", "Hassan", "Mohammad", "Khan"],
-  "irak": ["Ali", "Hassan", "Ibrahim", "Karim", "Rashid"],
-  "türkei": ["Özdemir", "Türk", "Aydın", "Kaya", "Demir"],
-  "polen": ["Kowalski", "Nowak", "Kamiński", "Lewandowski", "Grabowski"],
-  "bulgarien": ["Ivanov", "Dimitrov", "Nikolov", "Petrov", "Atanasov"],
-  "somalia": ["Hassan", "Mohammed", "Abdi", "Ali", "Ibrahim"],
-  "eritrea": ["Eritrea", "Tekle", "Solomon", "Assefa", "Desta"],
-  "ghana": ["Mensah", "Owusu", "Boateng", "Addae", "Acquah"],
-  "nigeria": ["Okafor", "Adeyemi", "Okonkwo", "Oluwaseun", "Adekunle"]
-};
-
-const LANGUAGES = {
-  "syrien": "Arabisch",
-  "ukraine": "Ukrainisch",
-  "rumänien": "Rumänisch",
-  "afghanistan": "Dari",
-  "irak": "Arabisch",
-  "türkei": "Türkisch",
-  "polen": "Polnisch",
-  "bulgarien": "Bulgarisch",
-  "somalia": "Somali",
-  "eritrea": "Tigrinya",
-  "ghana": "Twi",
-  "nigeria": "Yoruba"
-};
+const LANGUAGES = Object.fromEntries(Object.entries(COUNTRY_INFO).map(([k,v]) => [k.toLowerCase(), v.lang]));
+const SURNAMES = Object.fromEntries(Object.entries(COUNTRY_INFO).map(([k,v]) => [k.toLowerCase(), v.surnames]));
 
 const DATA = [
-  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",alts:["Ich heiße {name}.","Ich bin {name}.","Mein Name ist {name}."]},
-  {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",alts:["Mein Vorname ist {fname}.","Ich heiße {fname}."]},
-  {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",alts:["Mein Nachname ist {lname}.","Ich heiße {lname}."]},
-  {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",alts:["Ich komme aus {origin}.","Ich bin aus {origin}."]},
-  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",alts:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}."]},
-  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",a:"A-H-M-E-D",alts:["M-A-R-I-A","A-L-I"]},
-  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",a:"Es geht mir gut.",alts:["Es geht mir sehr gut.","Es geht mir nicht so gut.","Es geht."]},
-  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",a:"Ja, ich habe zwei Kinder.",alts:["Nein, ich habe keine Kinder.","Ja, ich habe ein Kind."]},
-  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",a:"Ja, ich bin verheiratet.",alts:["Nein, ich bin ledig.","Nein, ich bin geschieden.","Nein, ich bin verwitwet."]},
-  {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",a:"Ich wohne in Berlin.",alts:["Ich wohne in Homburg.","Ich wohne in St. Wendel."]},
-  {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",a:"Ich bin 30 Jahre alt.",alts:["Ich bin 25 Jahre alt.","Ich bin 40 Jahre alt."]},
-  {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",a:"Ich bin in Aleppo geboren.",alts:["Ich bin in Kiew geboren.","Ich bin in Kabul geboren."]}
+  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",answerTemplates:["Ich heiße {name}.","Ich bin {name}.","Mein Name ist {name}."]},
+  {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",answerTemplates:["Mein Vorname ist {fname}.","Ich heiße {fname}.","{fname}."]},
+  {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
+  {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",answerTemplates:["Ich komme aus {origin}.","Ich bin aus {origin}.","Aus {origin}."]},
+  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",answerTemplates:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}.","{lang}.","{lang} und ein bisschen Deutsch."]},
+  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",answerTemplates:["{spell_fname}"]},
+  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:["Es geht mir sehr gut.","Es geht mir gut.","Super.","Es geht mir nicht so gut.","Es geht mir schlecht.","Es geht.","Gut.","Nicht so gut."]},
+  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",answerTemplates:["Ja, ich habe ein Kind.","Ja, ich habe zwei Kinder.","Ja, ich habe drei Kinder.","Ja, ich habe vier Kinder.","Nein, ich habe keine Kinder."]},
+  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",answerTemplates:["Ja, ich bin verheiratet.","Nein, ich bin ledig.","Nein, ich bin verwitwet.","Nein, ich bin geschieden.","Nein, ich bin nicht verheiratet."]},
+  {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",answerTemplates:["Ich wohne in {city}.","In {city}."]},
+  {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",answerTemplates:["Ich bin {age} Jahre alt.","{age} Jahre alt.","Ich bin {age}."]},
+  {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",answerTemplates:["Ich bin in {birthplace} geboren.","In {birthplace}."]}
 ];
 
 const EXERCISES = ['learn', 'qa', 'quickfire', 'listen', 'listenrespond', 'dictation', 'puzzle', 'speak', 'memory', 'exam'];
@@ -720,39 +748,67 @@ function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,g
 function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}}}
 function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
 
+function countryMeta(origin){
+  return COUNTRY_INFO[origin] || COUNTRY_INFO[DEFAULT_PROFILE.origin];
+}
+
+function fillTemplate(t, p=studentPerson){
+  let first = p.fname || DEFAULT_PROFILE.fname;
+  let last = p.lname || DEFAULT_PROFILE.lname;
+  let full = (p.full || `${first} ${last}`).trim();
+  let spell = first.toUpperCase().split("").join("-");
+  return t.replaceAll("{name}", full)
+          .replaceAll("{fname}", first)
+          .replaceAll("{lname}", last)
+          .replaceAll("{origin}", p.origin || DEFAULT_PROFILE.origin)
+          .replaceAll("{lang}", p.lang || DEFAULT_PROFILE.lang)
+          .replaceAll("{city}", p.city || DEFAULT_PROFILE.city)
+          .replaceAll("{birthplace}", p.birthplace || DEFAULT_PROFILE.birthplace)
+          .replaceAll("{age}", p.age || DEFAULT_PROFILE.age)
+          .replaceAll("{spell_fname}", spell);
+}
+
 function generatePersonForAnswers(){
-  let origin = country ? country : ["Syrien", "Ukraine", "Rumänien"][Math.floor(Math.random() * 3)];
-  let isMale = Math.random() > 0.5;
-  let genderKey = isMale ? 'm' : 'f';
+  let origins = Object.keys(COUNTRY_INFO);
+  let origin = origins[Math.floor(Math.random() * origins.length)];
+  let meta = countryMeta(origin);
+  let genderKey = Math.random() > 0.5 ? 'm' : 'f';
   let fname = NAMES[genderKey][Math.floor(Math.random() * NAMES[genderKey].length)];
-  
-  let originKey = origin.toLowerCase();
-  let lname = SURNAMES[originKey] ? SURNAMES[originKey][Math.floor(Math.random() * SURNAMES[originKey].length)] : "Schmidt";
-  let lang = LANGUAGES[originKey] ? LANGUAGES[originKey] : "Deutsch";
-  
+  let lname = meta.surnames[Math.floor(Math.random() * meta.surnames.length)];
+  return {fname, lname, full: `${fname} ${lname}`, origin, lang: meta.lang, city: meta.city, birthplace: meta.birthplace, age: String(18 + Math.floor(Math.random()*45))};
+}
+
+function buildStudentPerson(){
+  let raw = student.trim() || DEFAULT_PROFILE.full;
+  let parts = raw.split(/\s+/).filter(Boolean);
+  let origin = country || DEFAULT_PROFILE.origin;
+  let meta = countryMeta(origin);
+  let fname = parts[0] || DEFAULT_PROFILE.fname;
+  let lname = parts.slice(1).join(" ") || DEFAULT_PROFILE.lname;
   return {
-    fname: fname,
-    lname: lname,
-    full: fname + " " + lname,
-    origin: origin,
-    lang: lang
+    fname,
+    lname,
+    full: `${fname} ${lname}`.trim(),
+    origin,
+    lang: meta.lang,
+    city: meta.city,
+    birthplace: meta.birthplace,
+    age: DEFAULT_PROFILE.age,
+    children: DEFAULT_PROFILE.children,
+    marital: DEFAULT_PROFILE.marital
   };
 }
 
 function start(){
-  student=$("name").value.trim(); course=$("course").value.trim(); gender=$("gender").value; country=$("country").value;
-  if(!student||!course){alert("Bitte Name und Kurscode eingeben.");return}
+  student=$("name").value.trim() || DEFAULT_PROFILE.full; 
+  course=$("course").value.trim() || "A1"; 
+  gender=$("gender").value; 
+  country=$("country").value || DEFAULT_PROFILE.origin;
   loadLocal(); 
-  studentPerson = {
-    fname: student.split(" ")[0] || student,
-    lname: student.split(" ")[1] || "",
-    full: student,
-    origin: country || "",
-    lang: country ? (LANGUAGES[country.toLowerCase()] || "Deutsch") : "Deutsch"
-  };
+  studentPerson = buildStudentPerson();
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
-  $("hello").innerText="Hallo, "+student+"!";
-  stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
+  $("hello").innerText="Hallo, "+studentPerson.fname+"!";
+  stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons(); render();
 }
 
 function logout(){
@@ -846,55 +902,90 @@ function speakText(t){
   let u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)
 }
 
-function clean(t){return (t||"").toLowerCase().replace(/[.,!?]/g,"").trim()}
-function ok(user,answer){let u=clean(user),a=clean(answer);return u===a||u.includes(a.split(" ")[0]+" "+a.split(" ")[1])||u.length>4&&a.includes(u)}
-
+function normalizeGermanNumber(t){
+  return t.replace(/\beins\b/g,"1").replace(/\bein\b/g,"1").replace(/\bzwei\b/g,"2").replace(/\bdrei\b/g,"3").replace(/\bvier\b/g,"4").replace(/\bfünf\b/g,"5").replace(/\bfuenf\b/g,"5");
+}
+function clean(t){
+  return normalizeGermanNumber((t||"").toLowerCase())
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/ß/g,"ss")
+    .replace(/[.,!?;:]/g,"")
+    .replace(/\s+/g," ")
+    .trim();
+}
+function answerVariants(x=item(), p=studentPerson){
+  let templates = x.answerTemplates || x.alts || (x.a ? [x.a] : []);
+  let variants = templates.map(t => fillTemplate(t, p));
+  if(x.topic==="Buchstabieren"){
+    let f = (p.fname || DEFAULT_PROFILE.fname).toUpperCase();
+    variants.push(f.split("").join(" "), f);
+  }
+  return [...new Set(variants.filter(Boolean))];
+}
+function ok(user,answer){
+  let u=clean(user);
+  let variants = answer ? [answer] : answerVariants();
+  return variants.some(v => {
+    let a=clean(v);
+    if(!u || !a) return false;
+    return u===a || (u.length>3 && a.includes(u)) || (a.length>3 && u.includes(a));
+  });
+}
+function showAdvanceButton(good){
+  let fb = $("feedback");
+  if(!fb || !good) return;
+  let finished = i >= DATA.length - 1;
+  if(finished){
+    exerciseProgress[game] = 100;
+    fb.innerHTML += `<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`;
+    setTimeout(()=>{
+      let b=$("continueExerciseBtn");
+      if(b) b.onclick = () => goNextExercise();
+    },0);
+  } else {
+    fb.innerHTML += `<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`;
+    setTimeout(()=>{
+      let b=$("nextQuestionBtn");
+      if(b) b.onclick = () => { i++; saveLocal(); render(); };
+    },0);
+  }
+}
+function goNextExercise(){
+  let idx = EXERCISES.indexOf(game);
+  saveLocal(); updateExerciseTracker(); renderGameButtons();
+  if(idx >= 0 && idx < EXERCISES.length-1){ mode(EXERCISES[idx+1]); }
+  else { $("game").innerHTML = `<h2>🏆 Fertig!</h2><div class="ok">Sehr gut! Alle Übungen sind abgeschlossen.</div>`; }
+}
 function mark(good, userAnswer=""){
   attempts++;
-  let entry = {question: item().topic, correct: good, answer: userAnswer, timestamp: new Date().toLocaleTimeString()};
+  let entry = {question: item().topic, correct: good, answer: userAnswer, acceptedAnswers: answerVariants(), timestamp: new Date().toLocaleTimeString()};
   answerHistory.push(entry);
-  
-  let gameAccuracy = Math.round((correct + (good ? 1 : 0)) * 100 / attempts);
-  exerciseProgress[game] = gameAccuracy;
-  
+  if(good){ correct++; score+=10; }
+  let perQuestionProgress = Math.round(((i + (good ? 1 : 0)) / DATA.length) * 100);
+  exerciseProgress[game] = Math.max(exerciseProgress[game] || 0, Math.min(100, perQuestionProgress));
   if(good){
-    correct++;
-    score+=10;
-    $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>"
+    $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>";
   } else {
-    $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Lösung: <strong>"+getAnswer()+"</strong></div>"
+    $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Mögliche Antwort: <strong>"+getAnswer()+"</strong><br><span class='small'>Auch akzeptiert: "+answerVariants().join(" · ")+"</span></div>";
   }
-  saveLocal();
+  saveLocal(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
+  showAdvanceButton(good);
 }
-
 function getAnswer(){
-  let x = item();
-  if(x.a) return x.a;
-  if(x.alts && x.alts.length > 0){
-    return x.alts[0].replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang);
-  }
-  return "...";
+  return answerVariants()[0] || "...";
 }
-
 function getRandomizedAnswers(){
   let x = item();
   let correctAnswer = getAnswer();
   let otherAnswers = [];
-  
-  for(let j = 0; j < 3; j++){
+  let guard = 0;
+  while(otherAnswers.length < 3 && guard < 30){
+    guard++;
     let otherPerson = generatePersonForAnswers();
-    let otherAnswer = "";
-    
-    if(x.alts && x.alts.length > 0){
-      otherAnswer = x.alts[0].replace("{name}", otherPerson.full).replace("{fname}", otherPerson.fname).replace("{lname}", otherPerson.lname).replace("{origin}", otherPerson.origin).replace("{lang}", otherPerson.lang);
-    }
-    
-    if(otherAnswer && otherAnswer !== correctAnswer){
-      otherAnswers.push(otherAnswer);
-    }
+    let otherAnswer = answerVariants(x, otherPerson)[0];
+    if(otherAnswer && clean(otherAnswer)!==clean(correctAnswer) && !otherAnswers.some(o=>clean(o)===clean(otherAnswer))){ otherAnswers.push(otherAnswer); }
   }
-  
-  return shuffle([correctAnswer, ...otherAnswers.slice(0, 3)]);
+  return shuffle([correctAnswer, ...otherAnswers]);
 }
 
 function render(){
@@ -904,7 +995,7 @@ function render(){
     
     if(game==="learn"){
       let answer = getAnswer();
-      let alts = x.alts ? x.alts.map(a => a.replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang)) : [];
+      let alts = answerVariants(x).filter(a => clean(a) !== clean(answer));
       
       currentQuestion = q;
       currentAnswer = answer;
@@ -1030,12 +1121,15 @@ function attachEventListeners(){
     if(speakQ) speakQ.onclick = () => speakText(currentQuestion);
     if(speakA) speakA.onclick = () => speakText(currentAnswer);
     if(next) next.onclick = () => {
-      i++;
-      exerciseProgress.learn = Math.min(100, Math.round((Math.min(i, DATA.length) / DATA.length) * 100));
-      saveLocal();
-      updateExerciseTracker();
-      renderGameButtons();
-      render();
+      if(i >= DATA.length - 1){
+        exerciseProgress.learn = 100;
+        saveLocal(); updateExerciseTracker(); renderGameButtons();
+        $("game").innerHTML = `<h2>📚 Lernen</h2><div class="ok">✅ Lernen abgeschlossen!</div><button class="success" onclick="goNextExercise()">✅ Du darfst zur nächsten Übung weiter</button>`;
+      } else {
+        i++;
+        exerciseProgress.learn = Math.min(100, Math.round((i / DATA.length) * 100));
+        saveLocal(); updateExerciseTracker(); renderGameButtons(); render();
+      }
     };
   }
   
@@ -1070,7 +1164,7 @@ function attachEventListeners(){
     let cont = $("listenContinue");
     if(play) play.onclick = () => speakText(currentQuestion);
     if(record) record.onclick = listenAndRespond;
-    if(cont) cont.onclick = () => { i++; render(); };
+    if(cont) cont.onclick = () => { if(i >= DATA.length - 1){ goNextExercise(); } else { i++; render(); } };
     setTimeout(() => {
       $("questionText").innerText = currentQuestion;
     }, 100);
@@ -1112,7 +1206,7 @@ function attachEventListeners(){
     let record = $("recordSpeakBtn");
     let cont = $("speakContinue");
     if(record) record.onclick = listenSpeech;
-    if(cont) cont.onclick = () => { i++; render(); };
+    if(cont) cont.onclick = () => { if(i >= DATA.length - 1){ goNextExercise(); } else { i++; render(); } };
   }
   
   // Exam events
