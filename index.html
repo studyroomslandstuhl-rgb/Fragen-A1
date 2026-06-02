@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A1 Fragen Trainer Pro</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #333;
+  min-height: 100vh;
+  padding: 10px;
+}
+
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  margin-bottom: 20px;
+  border-radius: 15px;
+}
+
+header h1 { font-size: 2.5em; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+header p { font-size: 1.1em; opacity: 0.95; }
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin: 15px 0;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover { box-shadow: 0 12px 35px rgba(0,0,0,0.15); }
+
+.card h2 {
+  color: #667eea;
+  margin-bottom: 15px;
+  font-size: 1.8em;
+  border-bottom: 3px solid #764ba2;
+  padding-bottom: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  margin: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+}
+
+button:active { transform: translateY(0); }
+
+button.secondary {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+button.success {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+button.danger {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+button.gamebtn {
+  font-size: 18px;
+  min-height: 100px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 140px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.big {
+  font-size: 28px;
+  font-weight: bold;
+  color: #667eea;
+  margin: 15px 0;
+}
+
+.small {
+  font-size: 14px;
+  color: #777;
+}
+
+.option {
+  display: block;
+  width: 100%;
+  background: #f0f4ff;
+  color: #333;
+  text-align: left;
+  padding: 15px;
+  margin: 8px 0;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.option:hover {
+  background: #e3e8ff;
+  border-color: #667eea;
+  transform: translateX(5px);
+}
+
+.option.selected {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.word {
+  background: #fff3cd;
+  color: #333;
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 8px;
+  display: inline-block;
+  cursor: pointer;
+  border: 2px solid #ffc107;
+  transition: all 0.2s ease;
+}
+
+.word:hover { transform: scale(1.05); }
+
+.hidden { display: none !important; }
+
+.ok {
+  color: #2ecc71;
+  font-weight: bold;
+  background: #d5f4e6;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px 0;
+  border-left: 4px solid #2ecc71;
+}
+
+.no {
+  color: #e74c3c;
+  font-weight: bold;
+  background: #fadbd8;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px 0;
+  border-left: 4px solid #e74c3c;
+}
+
+.memory {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.memcard {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  min-height: 110px;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.memcard:hover:not(.done) {
+  transform: scale(1.05);
+}
+
+.memcard.open {
+  background: white;
+  color: #333;
+  border: 3px solid #667eea;
+}
+
+.memcard.done {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  cursor: default;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  margin-top: 15px;
+}
+
+td, th {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+tr:hover {
+  background: #f0f4ff;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.stat-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.stat-box .number {
+  font-size: 2.5em;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.stat-box .label {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.feedback {
+  margin: 15px 0;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+  border-bottom: 2px solid #ddd;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0;
+}
+
+.tab-btn.active {
+  border-bottom-color: #667eea;
+  color: #667eea;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.leaderboard {
+  margin-top: 20px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin: 8px 0;
+  border-left: 4px solid #667eea;
+}
+
+.leaderboard-rank {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #667eea;
+  min-width: 40px;
+}
+
+.leaderboard-info {
+  flex: 1;
+  margin-left: 15px;
+}
+
+.leaderboard-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.leaderboard-course {
+  font-size: 0.9em;
+  color: #777;
+}
+
+.leaderboard-score {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.answer-history {
+  margin-top: 20px;
+}
+
+.history-item {
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9f9f9;
+}
+
+.history-item.correct {
+  border-left: 4px solid #2ecc71;
+}
+
+.history-item.incorrect {
+  border-left: 4px solid #e74c3c;
+}
+
+.history-question {
+  flex: 1;
+  font-weight: 500;
+}
+
+.history-status {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.history-status.correct {
+  background: #d5f4e6;
+  color: #2ecc71;
+}
+
+.history-status.incorrect {
+  background: #fadbd8;
+  color: #e74c3c;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  margin: 15px 0;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #667eea;
+}
+</style>
+</head>
+
+<body>
+<header>
+<h1>🇩🇪 A1 Fragen Trainer Pro</h1>
+<p>Interaktives Lernen · Echte Konversation · Wettbewerb · Statistik</p>
+</header>
+
+<main>
+<section id="login" class="card">
+<h2>🎓 Willkommen</h2>
+<div class="form-group">
+  <label>Dein Name *</label>
+  <input id="name" placeholder="z.B. Ahmed oder Maria">
+</div>
+<div class="form-group">
+  <label>Kurscode *</label>
+  <input id="course" placeholder="z.B. A1-Montag">
+</div>
+<div class="form-group">
+  <label>Dein Geschlecht (optional)</label>
+  <select id="gender">
+    <option value="">-- Wählen --</option>
+    <option value="m">Männlich (er/sein)</option>
+    <option value="f">Weiblich (sie/ihr)</option>
+  </select>
+</div>
+<div class="form-group">
+  <label>Dein Heimatland (optional)</label>
+  <select id="country">
+    <option value="">-- Wählen --</option>
+    <option value="Syrien">Syrien</option>
+    <option value="Ukraine">Ukraine</option>
+    <option value="Afghanistan">Afghanistan</option>
+    <option value="Irak">Irak</option>
+    <option value="Türkei">Türkei</option>
+    <option value="Polen">Polen</option>
+    <option value="Rumänien">Rumänien</option>
+    <option value="Bulgarien">Bulgarien</option>
+    <option value="Somalia">Somalia</option>
+    <option value="Eritrea">Eritrea</option>
+    <option value="Eritrea">Ghana">Ghana</option>
+    <option value="Nigeria">Nigeria</option>
+  </select>
+</div>
+<div class="flex-center">
+  <button onclick="start()">🚀 Starten</button>
+  <button class="secondary" onclick="teacher()">👨‍🏫 Lehrer-Dashboard</button>
+</div>
+</section>
+
+<section id="app" class="hidden">
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <div class="big" id="hello"></div>
+      <div id="stats"></div>
+    </div>
+    <button class="secondary" onclick="logout()">Abmelden</button>
+  </div>
+</div>
+
+<div class="stats" id="statsBox"></div>
+
+<div class="grid card flex-center">
+  <button class="gamebtn" onclick="mode('learn')">📚<br>Lernen</button>
+  <button class="gamebtn" onclick="mode('qa')">🗣️<br>Q&A</button>
+  <button class="gamebtn" onclick="mode('quickfire')">⚡<br>Blitzfeuer</button>
+  <button class="gamebtn" onclick="mode('listen')">🎧<br>Hören</button>
+  <button class="gamebtn" onclick="mode('dictation')">✍️<br>Diktat</button>
+  <button class="gamebtn" onclick="mode('puzzle')">🧩<br>Puzzle</button>
+  <button class="gamebtn" onclick="mode('speak')">🎤<br>Sprechen</button>
+  <button class="gamebtn" onclick="mode('memory')">🃏<br>Memory</button>
+  <button class="gamebtn" onclick="mode('exam')">🏆<br>Prüfung</button>
+</div>
+
+<div class="flex-center">
+  <button onclick="showStats()">📊 Meine Statistik</button>
+  <button onclick="showLeaderboard()">🏅 Bestenliste</button>
+  <button onclick="exportMe()">📤 Export</button>
+</div>
+
+<div id="game" class="card"></div>
+</section>
+
+<section id="statsSection" class="hidden">
+<div class="card">
+  <h2>📊 Deine Statistik</h2>
+  <button class="secondary" onclick="closeStats()">Zurück</button>
+  
+  <div class="stats" id="personalStats"></div>
+  
+  <h3 style="color: #667eea; margin-top: 30px;">Antwort-Verlauf</h3>
+  <div id="answerHistory"></div>
+</div>
+</section>
+
+<section id="leaderboardSection" class="hidden">
+<div class="card">
+  <h2>🏅 Bestenliste</h2>
+  <button class="secondary" onclick="closeLeaderboard()">Zurück</button>
+  
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('global')">Global</button>
+    <button class="tab-btn" onclick="switchTab('course')">Mein Kurs</button>
+  </div>
+  
+  <div id="global" class="tab-content active leaderboard"></div>
+  <div id="course" class="tab-content leaderboard"></div>
+</div>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="card">
+  <h2>📊 Lehrer-Dashboard</h2>
+  <p>Schüler exportieren ihren Fortschritt. Importieren Sie hier die JSON-Dateien.</p>
+  <input type="file" id="importFile" multiple accept=".json" onchange="importFiles(event)">
+  <button onclick="downloadCSV()">📥 CSV / Excel exportieren</button>
+  <button class="secondary" onclick="back()">Zurück</button>
+  <div id="dashTable"></div>
+</div>
+</section>
+</main>
+
+<script>
+const NAMES = {
+  m: ["Ahmed", "Ali", "Hassan", "Mohammed", "Ibrahim", "Khalid", "Omar", "Youssef", "Samir", "Karim"],
+  f: ["Maria", "Fatima", "Layla", "Aisha", "Zara", "Leila", "Hana", "Yasmin", "Noor", "Sara"]
+};
+
+const LANGUAGES = ["Arabisch", "Persisch", "Kurdisch", "Türkisch", "Englisch", "Französisch", "Spanisch", "Russisch", "Polnisch", "Rumänisch"];
+
+const DATA = [
+  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",a:"Ich heiße Ahmed.",alts:["Ich bin Ahmed.","Mein Name ist Ahmed."],category:"Persönlich"},
+  {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",a:"Mein Vorname ist Ahmed.",alts:["Ich heiße Ahmed."],category:"Persönlich"},
+  {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",a:"Mein Nachname ist Yilmaz.",alts:["Ich heiße Yilmaz."],category:"Persönlich"},
+  {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",a:"Ich komme aus Syrien.",alts:["Ich komme aus der Ukraine.","Ich komme aus Afghanistan."],category:"Herkunft"},
+  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",a:"Ich spreche Arabisch und ein bisschen Deutsch.",alts:["Ich spreche Ukrainisch und ein bisschen Deutsch."],category:"Sprache"},
+  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",a:"A-H-M-E-D",alts:["M-A-R-I-A","A-L-I"],category:"Aussprache"},
+  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",a:"Es geht mir gut.",alts:["Es geht mir sehr gut.","Es geht mir nicht so gut.","Es geht."],category:"Höflichkeit"},
+  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",a:"Ja, ich habe zwei Kinder.",alts:["Nein, ich habe keine Kinder.","Ja, ich habe ein Kind."],category:"Familie"},
+  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",a:"Ja, ich bin verheiratet.",alts:["Nein, ich bin ledig.","Nein, ich bin geschieden.","Nein, ich bin verwitwet."],category:"Familie"},
+  {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",a:"Ich wohne in Berlin.",alts:["Ich wohne in Homburg.","Ich wohne in St. Wendel."],category:"Wohnen"},
+  {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",a:"Ich bin 30 Jahre alt.",alts:["Ich bin 25 Jahre alt.","Ich bin 40 Jahre alt."],category:"Persönlich"},
+  {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",a:"Ich bin in Aleppo geboren.",alts:["Ich bin in Kiew geboren.","Ich bin in Kabul geboren."],category:"Herkunft"},
+  {topic:"Beruf",qSie:"Was ist Ihr Beruf?",qDu:"Was ist dein Beruf?",a:"Ich bin Ingenieur.",alts:["Ich bin Lehrer.","Ich bin Arzt.","Ich bin Krankenpfleger."],category:"Beruf"},
+  {topic:"Arbeit",qSie:"Wo arbeiten Sie?",qDu:"Wo arbeitest du?",a:"Ich arbeite in einer Fabrik.",alts:["Ich arbeite im Krankenhaus.","Ich arbeite in einer Schule."],category:"Beruf"},
+  {topic:"Hobbys",qSie:"Was sind Ihre Hobbys?",qDu:"Was sind deine Hobbys?",a:"Ich spiele Fußball und lese gerne.",alts:["Ich spiele Videospiele.","Ich höre gerne Musik."],category:"Freizeit"},
+  {topic:"Schulbildung",qSie:"Welche Schulbildung haben Sie?",qDu:"Welche Schulbildung hast du?",a:"Ich habe die Realschule abgeschlossen.",alts:["Ich habe das Gymnasium abgeschlossen.","Ich bin ohne Schulabschluss."],category:"Bildung"},
+];
+
+let student="", course="", gender="", country="", game="learn", i=0, score=0, attempts=0, correct=0;
+let dashboard=[], answerHistory=[], memoryCards=[], first=null, lock=false;
+
+function $(id){return document.getElementById(id)}
+function item(){return DATA[i%DATA.length]}
+function key(){return "A1_"+course+"_"+student}
+function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,gender,country,score,attempts,correct,i,date:new Date().toLocaleString(),answerHistory,categories:{}}));stats()}
+function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[]}}
+function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
+
+function start(){
+  student=$("name").value.trim(); course=$("course").value.trim(); gender=$("gender").value; country=$("country").value;
+  if(!student||!course){alert("Bitte Name und Kurscode eingeben.");return}
+  loadLocal(); $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("hello").innerText="Hallo, "+student+"!";
+  stats(); updateStatsBox(); mode("learn");
+}
+
+function logout(){
+  if(confirm("Wirklich abmelden?")){location.reload()}
+}
+
+function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
+function back(){location.reload()}
+function mode(m){game=m;i=0;if(m==="memory")setupMemory();render()}
+
+function updateStatsBox(){
+  let accuracy = attempts > 0 ? (correct * 100 / attempts).toFixed(0) : 0;
+  $("statsBox").innerHTML=`
+    <div class="stat-box">
+      <div class="label">Punkte</div>
+      <div class="number">${score}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">Richtig</div>
+      <div class="number">${correct}/${attempts}</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">Genauigkeit</div>
+      <div class="number">${accuracy}%</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">Modus</div>
+      <div class="number">${game.toUpperCase()}</div>
+    </div>
+  `;
+}
+
+function speakText(t){
+  let u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)
+}
+
+function clean(t){return (t||"").toLowerCase().replace(/[.,!?]/g,"").trim()}
+function ok(user,answer){let u=clean(user),a=clean(answer);return u===a||u.includes(a.split(" ")[0]+" "+a.split(" ")[1])||u.length>4&&a.includes(u)}
+
+function mark(good, userAnswer=""){
+  attempts++;
+  let entry = {question: item().topic, correct: good, answer: userAnswer, timestamp: new Date().toLocaleTimeString()};
+  answerHistory.push(entry);
+  
+  if(good){
+    correct++;
+    score+=10;
+    $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>"
+  } else {
+    $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Lösung: <strong>"+item().a+"</strong></div>"
+  }
+  saveLocal();
+}
+
+function render(){
+  let x=item(), q=x.qSie;
+  let html=`<h2>${title()}</h2><p class="small">Thema: ${x.topic} · Kategorie: ${x.category}</p>`;
+  
+  if(game==="learn"){
+    html+=`<div class="big">${q}</div><p>${x.qDu}</p>
+    <button onclick="speakText('${q}')">🔊 Frage hören</button>
+    <button onclick="speakText('${x.a}')">🔊 Antwort hören</button>
+    <h3>📝 Antwort:</h3><p class="big">${x.a}</p>
+    <h3>💡 Alternativen:</h3>${x.alts.map(a=>`<p>• ${a}</p>`).join("")}
+    <button class="success" onclick="next()">⏭️ Nächste Frage</button>`;
+  }
+  
+  if(game==="qa"){
+    html+=`<div class="big">${q}</div>
+    <p class="small">Versuche die Frage zu beantworten, bevor du unten klickst.</p>
+    <input id="ans" placeholder="Schreibe deine Antwort...">
+    <button onclick="checkAnswer()">Überprüfen</button>
+    <button class="secondary" onclick="showAnswer()">Lösung anzeigen</button>
+    <div id="feedback"></div>`;
+  }
+  
+  if(game==="quickfire"){
+    let opts=shuffle([x.a,...DATA.filter(d=>d.topic!==x.topic).slice(0,3).map(d=>d.a)]);
+    html+=`<div class="big">${q}</div><p>⚡ Wähle schnell die richtige Antwort!</p>`
+      +opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")
+      +`<div id="feedback"></div>`;
+  }
+  
+  if(game==="listen"){
+    let opts=shuffle([x.a,...DATA.filter(d=>d.topic!==x.topic).slice(0,3).map(d=>d.a)]);
+    html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
+    <button onclick="speakText('${q}')">🔊 Frage abspielen</button><br>
+    ${opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")}
+    <div id="feedback"></div>`;
+  }
+  
+  if(game==="dictation"){
+    html+=`<p>✍️ Höre und schreibe die Antwort.</p>
+    <button onclick="speakText('${x.a}')">🔊 Antwort hören</button>
+    <input id="ans" placeholder="Schreibe hier...">
+    <button onclick="checkWrite()">Überprüfen</button>
+    <div id="feedback"></div>`;
+  }
+  
+  if(game==="puzzle"){
+    let words=shuffle(x.qSie.replace("?"," ?").split(" "));
+    html+=`<p>🧩 Baue die Frage richtig zusammen.</p>
+    <div style="background:#f0f4ff; padding:15px; border-radius:10px; margin:10px 0;">
+      <div id="chosen" style="min-height:40px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;"></div>
+    </div>
+    <div style="margin:15px 0;">${words.map(w=>`<button class="word" onclick="addWord(this)">${w}</button>`).join("")}</div>
+    <button onclick="checkPuzzle()">Überprüfen</button>
+    <button class="secondary" onclick="render()">Neu</button>
+    <div id="feedback"></div>`;
+  }
+  
+  if(game==="speak"){
+    html+=`<div class="big">${q}</div>
+    <p>🎤 Sprich die Antwort. Chrome/Android funktioniert meistens am besten.</p>
+    <button onclick="listenSpeech()">🎤 Aufnahme starten</button>
+    <p id="heard"></p>
+    <div id="feedback"></div>
+    <p class="small"><strong>Erwartete Antwort:</strong> ${x.a}</p>`;
+  }
+  
+  if(game==="exam"){
+    html+=`<div class="big">${q}</div>
+    <input id="ans" placeholder="Antwort schreiben">
+    <button onclick="checkWrite()">Überprüfen</button>
+    <button onclick="speakText('${q}')">🔊 Frage hören</button>
+    <button class="success" onclick="next()">⏭️ Nächste Prüfungsfrage</button>
+    <div id="feedback"></div>`;
+  }
+  
+  if(game==="memory"){
+    html+=`<p>🃏 Finde Frage und passende Antwort.</p>
+    <div class="memory">${memoryCards.map((c,idx)=>`<div class="memcard ${c.open?'open':''} ${c.done?'done':''}" onclick="flip(${idx})">${c.open||c.done?c.text:"?"}</div>`).join("")}</div>`;
+  }
+  
+  $("game").innerHTML=html;
+  updateStatsBox();
+  saveLocal();
+}
+
+function title(){
+  return {learn:"📚 Lernen",qa:"🗣️ Q&A Modus",quickfire:"⚡ Blitzfeuer",listen:"🎧 Hören",dictation:"✍️ Diktat",puzzle:"🧩 Puzzle",speak:"🎤 Sprechen",memory:"🃏 Memory",exam:"🏆 Prüfung"}[game]
+}
+
+function next(){i++;render()}
+function esc(s){return s.replace(/'/g,"\\'")}
+function shuffle(a){return a.sort(()=>Math.random()-.5)}
+
+function quiz(o){let good=o===item().a;mark(good, o);setTimeout(next,800)}
+function checkAnswer(){let user=$("ans").value; mark(ok(user,item().a), user); setTimeout(next,1200)}
+function showAnswer(){mark(true); $("feedback").innerHTML=`<div class='ok'>✔ Antwort: ${item().a}</div>`; setTimeout(next,1500)}
+function checkWrite(){let user=$("ans").value;mark(ok(user,item().a), user);setTimeout(next,1200)}
+function addWord(btn){$("chosen").innerHTML+=`<button class="word" style="pointer-events:none;">${btn.innerText}</button>`;btn.disabled=true}
+function checkPuzzle(){let made=[...$("chosen").querySelectorAll("button")].map(b=>b.innerText).join(" ").replace(" ?","?");mark(made===item().qSie, made)}
+
+function listenSpeech(){
+  let R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!R){alert("Spracherkennung wird in diesem Browser nicht unterstützt.");return}
+  let r=new R();r.lang="de-DE";r.start();
+  r.onresult=e=>{let t=e.results[0][0].transcript;$("heard").innerText="Gehört: "+t;mark(ok(t,item().a), t)}
+}
+
+function setupMemory(){
+  let small=DATA.slice(0,6);memoryCards=[];
+  small.forEach((d,n)=>{
+    memoryCards.push({pair:n,text:d.qSie,type:"q",open:false,done:false});
+    memoryCards.push({pair:n,text:d.a,type:"a",open:false,done:false})
+  });
+  memoryCards=shuffle(memoryCards);first=null;lock=false;
+}
+
+function flip(idx){
+  if(lock||memoryCards[idx].done||memoryCards[idx].open)return;
+  memoryCards[idx].open=true;
+  if(first===null){first=idx;render();return}
+  let second=idx;
+  if(memoryCards[first].pair===memoryCards[second].pair&&memoryCards[first].type!==memoryCards[second].type){
+    memoryCards[first].done=true;memoryCards[second].done=true;score+=10;correct++;attempts++;first=null;saveLocal();render();
+  }else{
+    attempts++;lock=true;saveLocal();render();
+    setTimeout(()=>{memoryCards[first].open=false;memoryCards[second].open=false;first=null;lock=false;render()},900)
+  }
+}
+
+function showStats(){
+  let accuracy = attempts > 0 ? (correct * 100 / attempts).toFixed(0) : 0;
+  let categoryStats = {};
+  
+  answerHistory.forEach(h => {
+    let cat = DATA.find(d => d.topic === h.question)?.category || "Sonstige";
+    if(!categoryStats[cat]) categoryStats[cat] = {correct: 0, total: 0};
+    categoryStats[cat].total++;
+    if(h.correct) categoryStats[cat].correct++;
+  });
+  
+  let html = `
+    <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+      <div class="label">Gesamtpunkte</div>
+      <div class="number">${score}</div>
+    </div>
+    <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+      <div class="label">Versuche</div>
+      <div class="number">${attempts}</div>
+    </div>
+    <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+      <div class="label">Genauigkeit</div>
+      <div class="number">${accuracy}%</div>
+    </div>
+  `;
+  
+  html += `<h3 style="color:#667eea; margin-top:30px; grid-column:1/-1;">Nach Kategorie</h3>`;
+  Object.entries(categoryStats).forEach(([cat, stats]) => {
+    let catAccuracy = stats.total > 0 ? (stats.correct * 100 / stats.total).toFixed(0) : 0;
+    html += `
+      <div style="grid-column:1/-1; background:#f9f9f9; padding:15px; border-radius:10px; margin:8px 0;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <strong>${cat}</strong>
+          <span>${stats.correct}/${stats.total} (${catAccuracy}%)</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${catAccuracy}%">${catAccuracy}%</div>
+        </div>
+      </div>
+    `;
+  });
+  
+  $("personalStats").innerHTML = html;
+  
+  let historyHtml = answerHistory.map(h => `
+    <div class="history-item ${h.correct ? 'correct' : 'incorrect'}">
+      <div>
+        <div class="history-question">${h.question}</div>
+        <div class="small">${h.answer || 'N/A'}</div>
+        <div class="small">${h.timestamp}</div>
+      </div>
+      <div class="history-status ${h.correct ? 'correct' : 'incorrect'}">
+        ${h.correct ? '✔ Richtig' : '❌ Falsch'}
+      </div>
+    </div>
+  `).join("");
+  
+  $("answerHistory").innerHTML = historyHtml || "<p>Noch keine Einträge</p>";
+  
+  $("app").classList.add("hidden");
+  $("statsSection").classList.remove("hidden");
+}
+
+function closeStats(){
+  $("statsSection").classList.add("hidden");
+  $("app").classList.remove("hidden");
+}
+
+function showLeaderboard(){
+  loadAllStats();
+  
+  let allStudents = getAllStudents();
+  let globalTop = allStudents.sort((a,b) => b.score - a.score).slice(0, 10);
+  let courseStudents = allStudents.filter(s => s.course === course).sort((a,b) => b.score - a.score).slice(0, 10);
+  
+  let globalHtml = globalTop.map((s, idx) => `
+    <div class="leaderboard-entry">
+      <div class="leaderboard-rank">${idx+1}</div>
+      <div class="leaderboard-info">
+        <div class="leaderboard-name">${s.student}${s===globalTop[0]? ' 👑' : ''}</div>
+        <div class="leaderboard-course">${s.course}${s.country ? ' · ' + s.country : ''}</div>
+      </div>
+      <div class="leaderboard-score">${s.score} ⭐</div>
+    </div>
+  `).join("");
+  
+  let courseHtml = courseStudents.length > 0 ? courseStudents.map((s, idx) => `
+    <div class="leaderboard-entry">
+      <div class="leaderboard-rank">${idx+1}</div>
+      <div class="leaderboard-info">
+        <div class="leaderboard-name">${s.student}${s===courseStudents[0]? ' 👑' : ''}</div>
+        <div class="leaderboard-course">${s.course}${s.country ? ' · ' + s.country : ''}</div>
+      </div>
+      <div class="leaderboard-score">${s.score} ⭐</div>
+    </div>
+  `).join("") : "<p>Noch keine Einträge für deinen Kurs</p>";
+  
+  document.getElementById("global").innerHTML = globalHtml;
+  document.getElementById("course").innerHTML = courseHtml;
+  
+  $("app").classList.add("hidden");
+  $("leaderboardSection").classList.remove("hidden");
+}
+
+function closeLeaderboard(){
+  $("leaderboardSection").classList.add("hidden");
+  $("app").classList.remove("hidden");
+}
+
+function switchTab(tab){
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  event.target.classList.add("active");
+  document.getElementById(tab).classList.add("active");
+}
+
+function getAllStudents(){
+  let students = [];
+  for(let i=0; i<localStorage.length; i++){
+    let key = localStorage.key(i);
+    if(key.startsWith("A1_")){
+      try {
+        let data = JSON.parse(localStorage.getItem(key));
+        students.push(data);
+      } catch(e){}
+    }
+  }
+  return students;
+}
+
+function loadAllStats(){
+  dashboard = getAllStudents();
+}
+
+function exportMe(){
+  let data=JSON.parse(localStorage.getItem(key())||"{}");
+  let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  let a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`Fortschritt_${student}_${course}_${new Date().toISOString().split('T')[0]}.json`;a.click();
+}
+
+function importFiles(e){
+  dashboard=[];
+  [...e.target.files].forEach(f=>{
+    let reader=new FileReader();
+    reader.onload=ev=>{try{dashboard.push(JSON.parse(ev.target.result));drawDash()}catch(err){}};
+    reader.readAsText(f);
+  });
+}
+
+function drawDash(){
+  let rows=dashboard.map(d=>`
+    <tr>
+      <td>${d.student||""}</td>
+      <td>${d.course||""}</td>
+      <td>${d.country||""}</td>
+      <td>${d.score||0}</td>
+      <td>${d.correct||0}/${d.attempts||0}</td>
+      <td>${d.attempts>0?(d.correct*100/d.attempts).toFixed(0):'0'}%</td>
+      <td>${d.date||""}</td>
+    </tr>
+  `).join("");
+  
+  $("dashTable").innerHTML=`
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Kurs</th>
+        <th>Herkunft</th>
+        <th>Punkte</th>
+        <th>Richtig/Versuche</th>
+        <th>Genauigkeit</th>
+        <th>Datum</th>
+      </tr>
+      ${rows}
+    </table>
+  `;
+}
+
+function downloadCSV(){
+  let csv="Name;Kurs;Herkunft;Punkte;Richtig;Versuche;Genauigkeit;Datum\n"+dashboard.map(d=>{
+    let acc = d.attempts>0?(d.correct*100/d.attempts).toFixed(0):'0';
+    return `${d.student};${d.course};${d.country||''};${d.score};${d.correct};${d.attempts};${acc}%;${d.date}`
+  }).join("\n");
+  let blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  let a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`A1_Fortschritt_${new Date().toISOString().split('T')[0]}.csv`;a.click();
+}
+</script>
+</body>
+</html>
