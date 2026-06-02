@@ -711,7 +711,7 @@ const DATA = [
   {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
   {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",answerTemplates:["Ich komme aus {origin}.","Ich bin aus {origin}.","Aus {origin}."]},
   {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",answerTemplates:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}.","{lang}.","{lang} und ein bisschen Deutsch."]},
-  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",answerTemplates:["{spell_fname}"]},
+  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen oder Nachnamen.",qDu:"Buchstabiere bitte deinen Vornamen oder Nachnamen.",answerTemplates:["{spell_fname}","{spell_lname}","{spell_fname_space}","{spell_lname_space}"]},
   {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:["Es geht mir sehr gut.","Es geht mir gut.","Super.","Es geht mir nicht so gut.","Es geht mir schlecht.","Es geht.","Gut.","Nicht so gut."]},
   {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",answerTemplates:["Ja, ich habe ein Kind.","Ja, ich habe zwei Kinder.","Ja, ich habe drei Kinder.","Ja, ich habe vier Kinder.","Nein, ich habe keine Kinder."]},
   {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",answerTemplates:["Ja, ich bin verheiratet.","Nein, ich bin ledig.","Nein, ich bin verwitwet.","Nein, ich bin geschieden.","Nein, ich bin nicht verheiratet."]},
@@ -740,6 +740,8 @@ let exerciseProgress = {};
 let studentPerson = {};
 let currentQuestion = null;
 let currentAnswer = null;
+let responseTries = 0;
+let examStartTime = null, examTimer = null, examCorrect = 0, examAttempts = 0, examFinished = false;
 
 function $(id){return document.getElementById(id)}
 function item(){return DATA[i%DATA.length]}
@@ -747,6 +749,16 @@ function key(){return "A1_"+course+"_"+student}
 function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,gender,country,score,attempts,correct,i,date:new Date().toLocaleString(),answerHistory,exerciseProgress}));stats()}
 function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}}}
 function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
+function trainingExercises(){return EXERCISES.filter(ex=>ex!=="exam");}
+function allTrainingComplete(){return trainingExercises().every(ex => (exerciseProgress[ex]||0) >= 90);}
+function formatTime(ms){let sec=Math.max(0,Math.floor(ms/1000));let m=Math.floor(sec/60);let s=sec%60;return `${m}:${String(s).padStart(2,"0")}`;}
+function examScore(){let acc = examAttempts>0 ? (examCorrect/examAttempts) : 0; let elapsed = examStartTime ? Math.floor((Date.now()-examStartTime)/1000) : 0; return Math.max(0, Math.round(acc*1000 - elapsed));}
+function updateExamTimer(){let box=$("examTimer"); if(box && examStartTime){let elapsed=Date.now()-examStartTime; let acc=examAttempts>0?Math.round(examCorrect*100/examAttempts):0; box.innerHTML=`⏱️ Zeit: <strong>${formatTime(elapsed)}</strong> · 🎯 Genauigkeit: <strong>${acc}%</strong> · 🏆 Prüfungswert: <strong>${examScore()}</strong>`;}}
+function startExam(){i=0; examStartTime=Date.now(); examCorrect=0; examAttempts=0; examFinished=false; if(examTimer) clearInterval(examTimer); examTimer=setInterval(updateExamTimer,1000);}
+function saveExamResult(){let elapsedMs=Date.now()-examStartTime; let accuracy=examAttempts>0?Math.round(examCorrect*100/examAttempts):0; let result={name:student,course:course,score:examScore(),examScore:examScore(),examTimeMs:elapsedMs,examTime:formatTime(elapsedMs),examAccuracy:accuracy,examCorrect:examCorrect,examAttempts:examAttempts,total:DATA.length,date:new Date().toLocaleString()}; let board=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]"); board.push(result); board.sort((a,b)=>(b.examScore||b.score||0)-(a.examScore||a.score||0)); localStorage.setItem("A1_EXAM_RESULTS",JSON.stringify(board)); return result;}
+function finishExam(){if(examFinished)return; examFinished=true; if(examTimer) clearInterval(examTimer); let result=saveExamResult(); exerciseProgress.exam=100; saveLocal(); updateExerciseTracker(); renderGameButtons(); $("game").innerHTML=`<h2>🏆 Prüfung abgeschlossen!</h2><div class="ok">✅ Ergebnis veröffentlicht.</div><div class="stats"><strong>Zeit:</strong> ${result.examTime}<br><strong>Genauigkeit:</strong> ${result.examAccuracy}% (${result.examCorrect}/${result.examAttempts})<br><strong>Prüfungswert:</strong> ${result.examScore}</div><button onclick="showLeaderboard()">🏅 Öffentliche Ergebnisse ansehen</button>`;}
+function markExam(good,userAnswer=""){examAttempts++; attempts++; answerHistory.push({question:item().topic, correct:good, answer:userAnswer, acceptedAnswers:answerVariants(), timestamp:new Date().toLocaleTimeString(), exam:true}); if(good){examCorrect++; correct++; score+=10; $("feedback").innerHTML="<div class='ok'>✔ Richtig!</div>";} else {$("feedback").innerHTML="<div class='no'>❌ Nicht richtig.</div>";} updateExamTimer(); saveLocal(); let next=$("nextExamBtn"); if(next) next.style.display="inline-block";}
+
 
 function countryMeta(origin){
   return COUNTRY_INFO[origin] || COUNTRY_INFO[DEFAULT_PROFILE.origin];
@@ -757,6 +769,9 @@ function fillTemplate(t, p=studentPerson){
   let last = p.lname || DEFAULT_PROFILE.lname;
   let full = (p.full || `${first} ${last}`).trim();
   let spell = first.toUpperCase().split("").join("-");
+  let spellLast = last.toUpperCase().split("").join("-");
+  let spellSpace = first.toLowerCase().split("").join(" ");
+  let spellLastSpace = last.toLowerCase().split("").join(" ");
   return t.replaceAll("{name}", full)
           .replaceAll("{fname}", first)
           .replaceAll("{lname}", last)
@@ -765,7 +780,10 @@ function fillTemplate(t, p=studentPerson){
           .replaceAll("{city}", p.city || DEFAULT_PROFILE.city)
           .replaceAll("{birthplace}", p.birthplace || DEFAULT_PROFILE.birthplace)
           .replaceAll("{age}", p.age || DEFAULT_PROFILE.age)
-          .replaceAll("{spell_fname}", spell);
+          .replaceAll("{spell_fname}", spell)
+          .replaceAll("{spell_lname}", spellLast)
+          .replaceAll("{spell_fname_space}", spellSpace)
+          .replaceAll("{spell_lname_space}", spellLastSpace);
 }
 
 function generatePersonForAnswers(){
@@ -823,18 +841,11 @@ function updateExerciseTracker(){
   EXERCISES.forEach(ex => {
     let progress = exerciseProgress[ex] || 0;
     let isCompleted = progress >= 90;
-    let isLocked = false;
-    let exerciseIdx = EXERCISES.indexOf(ex);
-    
-    if(exerciseIdx > 0){
-      let prevEx = EXERCISES[exerciseIdx - 1];
-      let prevProgress = exerciseProgress[prevEx] || 0;
-      isLocked = prevProgress < 90;
-    }
-    
+    let isLocked = ex === "exam" && !allTrainingComplete();
+    let label = ex === "exam" && isLocked ? "🔒 erst nach allen Aufgaben" : progress + "%";
     html += `<div class="exercise-item ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}" onclick="${isLocked ? '' : `mode('${ex}')`}">
       <span class="name">${EXERCISE_NAMES[ex]}</span>
-      <span class="score">${progress}%</span>
+      <span class="score">${label}</span>
     </div>`;
   });
   $("exerciseTracker").innerHTML = html;
@@ -843,35 +854,22 @@ function updateExerciseTracker(){
 function renderGameButtons(){
   let html = '';
   EXERCISES.forEach(ex => {
-    let isLocked = false;
-    let exerciseIdx = EXERCISES.indexOf(ex);
-    
-    if(exerciseIdx > 0){
-      let prevEx = EXERCISES[exerciseIdx - 1];
-      let prevProgress = exerciseProgress[prevEx] || 0;
-      isLocked = prevProgress < 90;
-    }
-    
-    html += `<button class="gamebtn ${isLocked ? 'locked' : ''}" onclick="${isLocked ? "alert('Löse zuerst die vorherige Aufgabe zu 90% ab!')" : `mode('${ex}')`}" ${isLocked ? 'disabled' : ''}>
-      ${EXERCISE_NAMES[ex]}
+    let isLocked = ex === "exam" && !allTrainingComplete();
+    let title = isLocked ? "Prüfung erst nach allen erledigten Aufgaben" : EXERCISE_NAMES[ex];
+    html += `<button class="gamebtn ${isLocked ? 'locked' : ''}" onclick="${isLocked ? "alert('Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.')" : `mode('${ex}')`}" ${isLocked ? 'disabled' : ''}>
+      ${title}
     </button>`;
   });
   $("gameButtons").innerHTML = html;
 }
 
 function mode(m){
-  let exerciseIdx = EXERCISES.indexOf(m);
-  if(exerciseIdx > 0){
-    let prevEx = EXERCISES[exerciseIdx - 1];
-    let prevProgress = exerciseProgress[prevEx] || 0;
-    if(prevProgress < 90){
-      alert("Löse zuerst "+EXERCISE_NAMES[prevEx]+" zu 90% ab!");
-      return;
-    }
+  if(m === "exam" && !allTrainingComplete()){
+    alert("Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.");
+    return;
   }
-  
   game=m;
-  i=0;
+  if(m==="exam"){ startExam(); } else { i=0; }
   if(m==="memory")setupMemory();
   render();
 }
@@ -917,8 +915,16 @@ function answerVariants(x=item(), p=studentPerson){
   let templates = x.answerTemplates || x.alts || (x.a ? [x.a] : []);
   let variants = templates.map(t => fillTemplate(t, p));
   if(x.topic==="Buchstabieren"){
-    let f = (p.fname || DEFAULT_PROFILE.fname).toUpperCase();
-    variants.push(f.split("").join(" "), f);
+    let f = (p.fname || DEFAULT_PROFILE.fname);
+    let l = (p.lname || DEFAULT_PROFILE.lname);
+    [f,l].forEach(n=>{
+      variants.push(
+        n.toUpperCase().split("").join("-"),
+        n.toLowerCase().split("").join(" "),
+        n.toUpperCase().split("").join(" "),
+        n
+      );
+    });
   }
   return [...new Set(variants.filter(Boolean))];
 }
@@ -934,6 +940,8 @@ function ok(user,answer){
 function showAdvanceButton(good){
   let fb = $("feedback");
   if(!fb || !good) return;
+  $("nextQuestionBtn")?.remove();
+  $("continueExerciseBtn")?.remove();
   let finished = i >= DATA.length - 1;
   if(finished){
     exerciseProgress[game] = 100;
@@ -988,10 +996,63 @@ function getRandomizedAnswers(){
   return shuffle([correctAnswer, ...otherAnswers]);
 }
 
+function getCrossTopicAnswers(){
+  let correctAnswer = getAnswer();
+  let pool = [];
+  DATA.forEach(d => {
+    if(d.topic !== item().topic){
+      answerVariants(d).forEach(a => {
+        if(a && clean(a)!==clean(correctAnswer) && !pool.some(p=>clean(p)===clean(a))) pool.push(a);
+      });
+    }
+  });
+  pool = shuffle(pool).slice(0,3);
+  return shuffle([correctAnswer, ...pool]);
+}
+
+function responseHint(){
+  let x=item();
+  if(x.topic==="Name") return "Beginnen Sie zum Beispiel mit: Ich heiße ...";
+  if(x.topic==="Heimatland") return "Beginnen Sie zum Beispiel mit: Ich komme aus ...";
+  if(x.topic==="Sprache") return "Beginnen Sie zum Beispiel mit: Ich spreche ...";
+  if(x.topic==="Wohnort") return "Beginnen Sie zum Beispiel mit: Ich wohne in ...";
+  if(x.topic==="Alter") return "Beginnen Sie zum Beispiel mit: Ich bin ... Jahre alt.";
+  if(x.topic==="Geburtsort") return "Beginnen Sie zum Beispiel mit: Ich bin in ... geboren.";
+  if(x.topic==="Buchstabieren") return "Sagen oder schreiben Sie die Buchstaben einzeln, z. B. a l i s a.";
+  return "Hören Sie die Frage noch einmal und antworten Sie mit einem ganzen Satz.";
+}
+
+function markResponse(good, userAnswer=""){
+  attempts++;
+  let entry = {question: item().topic, correct: good, answer: userAnswer, acceptedAnswers: answerVariants(), timestamp: new Date().toLocaleTimeString()};
+  answerHistory.push(entry);
+  if(good){
+    correct++; score+=10; responseTries=0;
+    $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>";
+    showAdvanceButton(true);
+  } else {
+    responseTries++;
+    if(responseTries===1){
+      $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Versuche es noch einmal.</div><button class='secondary' id='showHelpOnly'>💡 Hilfe anzeigen</button><div id='helpBox' class='small'></div>";
+      setTimeout(()=>{let b=$("showHelpOnly"); if(b) b.onclick=()=>$("helpBox").innerHTML="<strong>Hilfe:</strong> "+responseHint();},0);
+    } else {
+      let opts = getCrossTopicAnswers().map(a=>`<button class="option help-answer" data-answer="${a}">${a}</button>`).join("");
+      $("feedback").innerHTML="<div class='no'>❌ Noch nicht richtig. Jetzt bekommst du Antwortmöglichkeiten.</div>"+opts;
+      setTimeout(()=>{
+        document.querySelectorAll(".help-answer").forEach(btn=>{
+          btn.onclick=()=>{let ans=btn.dataset.answer; if(ok(ans,getAnswer())) markResponse(true,ans); else markResponse(false,ans);};
+        });
+      },0);
+    }
+  }
+  saveLocal(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
+}
+
 function render(){
   try {
     let x=item(), q=x.qSie;
-    let html=`<h2>${EXERCISE_NAMES[game]}</h2><p class="small">Thema: ${x.topic}</p>`;
+    let html=`<h2>${EXERCISE_NAMES[game]}</h2>`;
+    if(!["listen","listenrespond"].includes(game)){ html += `<p class="small">Thema: ${x.topic}</p>`; }
     
     if(game==="learn"){
       let answer = getAnswer();
@@ -1027,7 +1088,7 @@ function render(){
     }
     
     if(game==="listen"){
-      let opts=getRandomizedAnswers();
+      let opts=getCrossTopicAnswers();
       currentQuestion = q;
       html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
       <button id="playQuestion">🔊 Frage abspielen</button><br>`;
@@ -1041,14 +1102,15 @@ function render(){
       let answer = getAnswer();
       currentQuestion = q;
       currentAnswer = answer;
-      html+=`<p>🎤 Höre die Frage und antworte mündlich!</p>
+      responseTries = 0;
+      html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p>
       <button id="playQuestionRespond">🔊 Frage abspielen</button>
-      <p id="questionText" style="font-style:italic; margin:15px 0;"></p>
-      <button id="recordRespond">🎤 Antworte mit deiner Stimme</button>
+      <div id="micStatus" class="small">⚪ Mikrofon aus</div>
+      <button id="recordRespond">🎤 Mikrofon starten</button>
+      <input id="typedRespond" placeholder="Oder Antwort schreiben...">
+      <button id="checkRespondTyped">Überprüfen</button>
       <p id="heard"></p>
-      <div id="feedback"></div>
-      <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
-      <button class="success hidden" id="listenContinue">⏭️ Nächste Frage</button>`;
+      <div id="feedback"></div>`;
     }
     
     if(game==="dictation"){
@@ -1077,25 +1139,29 @@ function render(){
       let answer = getAnswer();
       currentQuestion = q;
       currentAnswer = answer;
+      responseTries = 0;
       html+=`<div class="big">${q}</div>
       <p>🎤 Sprich die Antwort. Chrome/Android funktioniert meistens am besten.</p>
-      <button id="recordSpeakBtn">🎤 Aufnahme starten</button>
+      <div id="micStatus" class="small">⚪ Mikrofon aus</div>
+      <button id="recordSpeakBtn">🎤 Mikrofon starten</button>
+      <input id="typedRespond" placeholder="Oder Antwort schreiben...">
+      <button id="checkRespondTyped">Überprüfen</button>
       <p id="heard"></p>
-      <div id="feedback"></div>
-      <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
-      <button class="success hidden" id="speakContinue">⏭️ Nächste Frage</button>`;
+      <div id="feedback"></div>`;
     }
     
     if(game==="exam"){
       let answer = getAnswer();
       currentQuestion = q;
       currentAnswer = answer;
-      html+=`<div class="big">${q}</div>
+      html+=`<div id="examTimer" class="stats"></div>
+      <div class="big">Prüfungsfrage ${i+1} von ${DATA.length}</div>
+      <button id="speakExamBtn">🔊 Frage hören</button>
       <input id="ans" placeholder="Antwort schreiben">
       <button id="checkExamBtn">Überprüfen</button>
-      <button id="speakExamBtn">🔊 Frage hören</button>
-      <button class="success" id="nextExamBtn">⏭️ Nächste Prüfungsfrage</button>
+      <button class="success" id="nextExamBtn" style="display:none">⏭️ Nächste Prüfungsfrage</button>
       <div id="feedback"></div>`;
+      setTimeout(updateExamTimer,0);
     }
     
     if(game==="memory"){
@@ -1138,7 +1204,7 @@ function attachEventListeners(){
     let check = $("checkBtn");
     let show = $("showBtn");
     if(check) check.onclick = () => { let u=$("ans").value; if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)} };
-    if(show) show.onclick = () => $("ans").value = getAnswer();
+    if(show) show.onclick = () => { $("feedback").innerHTML = `<div class="small"><strong>Hilfe:</strong> ${responseHint()}<br>Nach zwei falschen Versuchen werden passende Antworten angezeigt.</div>`; };
   }
   
   // Quickfire events
@@ -1161,13 +1227,10 @@ function attachEventListeners(){
   if(game === "listenrespond"){
     let play = $("playQuestionRespond");
     let record = $("recordRespond");
-    let cont = $("listenContinue");
+    let checkTyped = $("checkRespondTyped");
     if(play) play.onclick = () => speakText(currentQuestion);
     if(record) record.onclick = listenAndRespond;
-    if(cont) cont.onclick = () => { if(i >= DATA.length - 1){ goNextExercise(); } else { i++; render(); } };
-    setTimeout(() => {
-      $("questionText").innerText = currentQuestion;
-    }, 100);
+    if(checkTyped) checkTyped.onclick = () => { let u=$("typedRespond").value; markResponse(ok(u,getAnswer()),u); };
   }
   
   // Dictation events
@@ -1204,9 +1267,9 @@ function attachEventListeners(){
   // Speak events
   if(game === "speak"){
     let record = $("recordSpeakBtn");
-    let cont = $("speakContinue");
+    let checkTyped = $("checkRespondTyped");
     if(record) record.onclick = listenSpeech;
-    if(cont) cont.onclick = () => { if(i >= DATA.length - 1){ goNextExercise(); } else { i++; render(); } };
+    if(checkTyped) checkTyped.onclick = () => { let u=$("typedRespond").value; markResponse(ok(u,getAnswer()),u); };
   }
   
   // Exam events
@@ -1214,9 +1277,9 @@ function attachEventListeners(){
     let check = $("checkExamBtn");
     let speak = $("speakExamBtn");
     let next = $("nextExamBtn");
-    if(check) check.onclick = () => { let u=$("ans").value; if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)} };
+    if(check) check.onclick = () => { let u=$("ans").value; markExam(ok(u,getAnswer()),u); };
     if(speak) speak.onclick = () => speakText(currentQuestion);
-    if(next) next.onclick = () => { i++; render(); };
+    if(next) next.onclick = () => { if(i >= DATA.length-1){ finishExam(); } else { i++; render(); } };
   }
   
   // Memory events
@@ -1229,15 +1292,25 @@ function attachEventListeners(){
   }
 }
 
+function setMic(on){
+  let m=$("micStatus");
+  if(m) m.innerHTML = on ? "🔴 Mikrofon aktiv – ich höre zu ..." : "⚪ Mikrofon aus";
+}
+
 function listenAndRespond(){
   if(!('webkitSpeechRecognition' in window)){alert("Speech Recognition nicht unterstützt. Versuchen Sie Chrome oder Edge.");return}
   let recognition=new webkitSpeechRecognition();
   recognition.lang='de-DE';
+  recognition.onstart=()=>setMic(true);
+  recognition.onend=()=>setMic(false);
+  recognition.onerror=()=>setMic(false);
   recognition.start();
+  let rb=$("recordRespond"); if(rb) rb.innerText="🔴 Aufnahme läuft...";
   recognition.onresult=e=>{
     let t=e.results[e.results.length-1][0].transcript;
     $("heard").innerText="Gehört: "+t;
-    if(ok(t,getAnswer())){mark(true,t);$("listenContinue").classList.remove("hidden")}else{mark(false,t)}
+    if(rb) rb.innerText="🎤 Mikrofon starten";
+    markResponse(ok(t,getAnswer()),t);
   };
 }
 
@@ -1245,11 +1318,16 @@ function listenSpeech(){
   if(!('webkitSpeechRecognition' in window)){alert("Speech Recognition nicht unterstützt.");return}
   let recognition=new webkitSpeechRecognition();
   recognition.lang='de-DE';
+  recognition.onstart=()=>setMic(true);
+  recognition.onend=()=>setMic(false);
+  recognition.onerror=()=>setMic(false);
   recognition.start();
+  let rb=$("recordSpeakBtn"); if(rb) rb.innerText="🔴 Aufnahme läuft...";
   recognition.onresult=e=>{
     let t=e.results[e.results.length-1][0].transcript;
     $("heard").innerText="Gesprochen: "+t;
-    if(ok(t,getAnswer())){mark(true,t);$("speakContinue").classList.remove("hidden")}else{mark(false,t)}
+    if(rb) rb.innerText="🎤 Mikrofon starten";
+    markResponse(ok(t,getAnswer()),t);
   };
 }
 
@@ -1311,29 +1389,32 @@ function closeStats(){
 }
 
 function showLeaderboard(){
-  let globalBoard=JSON.parse(localStorage.getItem("A1_LEADERBOARD")||"[]");
+  let examBoard=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");
+  examBoard.sort((a,b)=>(b.examScore||b.score||0)-(a.examScore||a.score||0));
+  let globalBoard=examBoard.length ? examBoard : JSON.parse(localStorage.getItem("A1_LEADERBOARD")||"[]");
   let courseBoard=globalBoard.filter(e=>e.course===course);
   
-  $("global").innerHTML=globalBoard.slice(0,10).map((e,i)=>`<div class="leaderboard-entry">
+  $("global").innerHTML=(globalBoard.length?globalBoard.slice(0,20).map((e,i)=>`<div class="leaderboard-entry">
     <span class="leaderboard-rank">${i+1}</span>
     <div class="leaderboard-info">
       <div class="leaderboard-name">${e.name}</div>
-      <div class="leaderboard-course">${e.course}</div>
+      <div class="leaderboard-course">${e.course} · Zeit: ${e.examTime||'-'} · Genauigkeit: ${e.examAccuracy??'-'}%</div>
     </div>
-    <div class="leaderboard-score">${e.score} Pts</div>
-  </div>`).join("");
+    <div class="leaderboard-score">${e.examScore||e.score||0}</div>
+  </div>`).join(""):"<p>Noch keine Prüfungsergebnisse.</p>");
   
-  $("course").innerHTML=courseBoard.slice(0,10).map((e,i)=>`<div class="leaderboard-entry">
+  $("course").innerHTML=(courseBoard.length?courseBoard.slice(0,20).map((e,i)=>`<div class="leaderboard-entry">
     <span class="leaderboard-rank">${i+1}</span>
     <div class="leaderboard-info">
       <div class="leaderboard-name">${e.name}</div>
+      <div class="leaderboard-course">Zeit: ${e.examTime||'-'} · Genauigkeit: ${e.examAccuracy??'-'}%</div>
     </div>
-    <div class="leaderboard-score">${e.score} Pts</div>
-  </div>`).join("");
+    <div class="leaderboard-score">${e.examScore||e.score||0}</div>
+  </div>`).join(""):"<p>Noch keine Prüfungsergebnisse in diesem Kurs.</p>");
   
-  let progressHtml=`<table><tr><th>Name</th><th>Learn</th><th>QA</th><th>Quickfire</th></tr>`;
-  courseBoard.forEach(e=>{
-    progressHtml+=`<tr><td>${e.name}</td><td>${e.learn||0}%</td><td>${e.qa||0}%</td><td>${e.quickfire||0}%</td></tr>`;
+  let progressHtml=`<table><tr><th>Name</th><th>Kurs</th><th>Zeit</th><th>Genauigkeit</th><th>Wert</th></tr>`;
+  globalBoard.forEach(e=>{
+    progressHtml+=`<tr><td>${e.name}</td><td>${e.course}</td><td>${e.examTime||'-'}</td><td>${e.examAccuracy??'-'}%</td><td>${e.examScore||e.score||0}</td></tr>`;
   });
   progressHtml+=`</table>`;
   $("progress").innerHTML=progressHtml;
