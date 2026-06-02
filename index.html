@@ -533,23 +533,23 @@ tr:hover {
 
 <main>
 <section id="login" class="card">
-<h2>🎓 Anmeldung</h2>
-<p class="small">Bitte alle Felder ausfüllen. Die Übungen werden mit diesen Daten angepasst.</p>
-<div class="form-group"><label>Vorname *</label><input id="fname" required placeholder="z.B. Alisa"></div>
-<div class="form-group"><label>Nachname *</label><input id="lname" required placeholder="z.B. Feldbusch"></div>
-<div class="form-group"><label>Kurscode *</label><input id="course" required placeholder="z.B. A1-Montag"></div>
+<h2>🎓 Willkommen</h2>
 <div class="form-group">
-  <label>Geschlecht *</label>
-  <select id="gender" required>
-    <option value="">-- Wählen --</option>
-    <option value="m">Männlich</option>
-    <option value="f">Weiblich</option>
-  </select>
+  <label>Vorname *</label>
+  <input id="fname" required placeholder="z.B. Maria, Omar, Anna, Ali">
+</div>
+<div class="form-group">
+  <label>Nachname *</label>
+  <input id="lname" required placeholder="z.B. Schmidt, Hassan, Müller, Ben Ali">
+</div>
+<div class="form-group">
+  <label>Kurscode *</label>
+  <input id="course" required placeholder="z.B. A1-Montag">
 </div>
 <div class="form-group">
   <label>Heimatland *</label>
   <select id="country" required>
-    <option value="">-- Wählen --</option>
+    <option value="">-- Heimatland wählen --</option>
     <option value="Deutschland">Deutschland</option>
     <option value="Syrien">Syrien</option>
     <option value="Ukraine">Ukraine</option>
@@ -563,7 +563,6 @@ tr:hover {
     <option value="Eritrea">Eritrea</option>
     <option value="Ghana">Ghana</option>
     <option value="Nigeria">Nigeria</option>
-    <option value="Russland">Russland</option>
     <option value="Algerien">Algerien</option>
     <option value="Marokko">Marokko</option>
     <option value="Tunesien">Tunesien</option>
@@ -576,33 +575,46 @@ tr:hover {
     <option value="USA">USA</option>
     <option value="China">China</option>
     <option value="Japan">Japan</option>
+    <option value="Russland">Russland</option>
   </select>
 </div>
-<div class="form-group"><label>Sprache *</label><input id="lang" required placeholder="z.B. Russisch"></div>
-<div class="form-group"><label>Wohnort in Deutschland *</label><input id="city" required placeholder="z.B. Leipzig"></div>
-<div class="form-group"><label>Alter *</label><input id="age" required type="number" min="1" max="120" placeholder="z.B. 35"></div>
-<div class="form-group"><label>Geburtsort *</label><input id="birthplace" required placeholder="z.B. Moskau"></div>
+<div class="form-group">
+  <label>Sprache *</label>
+  <input id="langInput" required placeholder="z.B. Arabisch, Ukrainisch, Türkisch">
+</div>
+<div class="form-group">
+  <label>Wohnort in Deutschland *</label>
+  <input id="cityInput" required placeholder="z.B. Homburg, Berlin, Leipzig">
+</div>
+<div class="form-group">
+  <label>Alter *</label>
+  <input id="ageInput" required type="number" min="1" max="120" placeholder="z.B. 35">
+</div>
+<div class="form-group">
+  <label>Geburtsort *</label>
+  <input id="birthplaceInput" required placeholder="Geburtsort eingeben">
+</div>
 <div class="form-group">
   <label>Kinder *</label>
-  <select id="children" required>
-    <option value="">-- Wählen --</option>
-    <option value="keine Kinder">keine Kinder</option>
-    <option value="ein Kind">ein Kind</option>
-    <option value="zwei Kinder">zwei Kinder</option>
-    <option value="drei Kinder">drei Kinder</option>
-    <option value="vier Kinder">vier Kinder</option>
-    <option value="fünf Kinder">fünf Kinder</option>
-    <option value="sechs Kinder">sechs Kinder</option>
-    <option value="sieben Kinder">sieben Kinder</option>
-    <option value="acht Kinder">acht Kinder</option>
-    <option value="neun Kinder">neun Kinder</option>
-    <option value="zehn Kinder">zehn Kinder</option>
+  <select id="childrenInput" required>
+    <option value="">-- wählen --</option>
+    <option value="0">keine Kinder</option>
+    <option value="1">1 Kind</option>
+    <option value="2">2 Kinder</option>
+    <option value="3">3 Kinder</option>
+    <option value="4">4 Kinder</option>
+    <option value="5">5 Kinder</option>
+    <option value="6">6 Kinder</option>
+    <option value="7">7 Kinder</option>
+    <option value="8">8 Kinder</option>
+    <option value="9">9 Kinder</option>
+    <option value="10">10 Kinder</option>
   </select>
 </div>
 <div class="form-group">
   <label>Familienstand *</label>
-  <select id="marital" required>
-    <option value="">-- Wählen --</option>
+  <select id="maritalInput" required>
+    <option value="">-- wählen --</option>
     <option value="verheiratet">verheiratet</option>
     <option value="ledig">ledig</option>
     <option value="geschieden">geschieden</option>
@@ -740,8 +752,8 @@ const DATA = [
   {topic:"Vorname buchstabieren",spellType:"fname",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",answerTemplates:["{spell_fname}","{spell_fname_space}"]},
   {topic:"Nachname buchstabieren",spellType:"lname",qSie:"Buchstabieren Sie bitte Ihren Nachnamen.",qDu:"Buchstabiere bitte deinen Nachnamen.",answerTemplates:["{spell_lname}","{spell_lname_space}"]},
   {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:["Es geht mir {feeling}.","{feeling}.","Es geht.","Gut.","Nicht so gut."]},
-  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",answerTemplates:["Ja, ich habe {children}.","Ich habe {children}.","Nein, ich habe keine Kinder."]},
-  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",answerTemplates:["Ja, ich bin verheiratet.","Ich bin verheiratet.","Nein, ich bin {marital}.","Ich bin {marital}.","Nein."]},
+  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",answerTemplates:["{children_answer}"]},
+  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",answerTemplates:["{marital_answer}"]},
   {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",answerTemplates:["Ich wohne in {city}.","In {city}."]},
   {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",answerTemplates:["Ich bin {age} Jahre alt.","{age} Jahre alt.","Ich bin {age}."]},
   {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",answerTemplates:["Ich bin in {birthplace} geboren.","In {birthplace}."]}
@@ -778,7 +790,7 @@ function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,g
 function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;game=x.game||game;questionOrder=x.questionOrder||DATA.map((_,idx)=>idx);answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}; if(x.studentPerson) studentPerson=x.studentPerson;}}
 function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
 function trainingExercises(){return EXERCISES.filter(ex=>ex!=="exam");}
-function allTrainingComplete(){return trainingExercises().every(ex => (exerciseProgress[ex]||0) >= 90);}
+function allTrainingComplete(){return true; /* TESTMODUS: Prüfung ist offen. */}
 function formatTime(ms){let sec=Math.max(0,Math.floor(ms/1000));let m=Math.floor(sec/60);let s=sec%60;return `${m}:${String(s).padStart(2,"0")}`;}
 function examScore(){let acc = examAttempts>0 ? (examCorrect/examAttempts) : 0; let elapsed = examStartTime ? Math.floor((Date.now()-examStartTime)/1000) : 0; return Math.max(0, Math.round(acc*1000 - elapsed));}
 function updateExamTimer(){let box=$("examTimer"); if(box && examStartTime){let elapsed=Date.now()-examStartTime; let acc=examAttempts>0?Math.round(examCorrect*100/examAttempts):0; box.innerHTML=`⏱️ Zeit: <strong>${formatTime(elapsed)}</strong> · 🎯 Genauigkeit: <strong>${acc}%</strong> · 🏆 Prüfungswert: <strong>${examScore()}</strong>`;}}
@@ -790,6 +802,23 @@ function markExam(good,userAnswer=""){examAttempts++; attempts++; answerHistory.
 
 function countryMeta(origin){
   return COUNTRY_INFO[origin] || COUNTRY_INFO[DEFAULT_PROFILE.origin];
+}
+
+
+function numberWord(n){
+  const words = {"0":"null","1":"ein","2":"zwei","3":"drei","4":"vier","5":"fünf","6":"sechs","7":"sieben","8":"acht","9":"neun","10":"zehn"};
+  return words[String(n)] || String(n);
+}
+function childrenAnswer(p=studentPerson){
+  let n = String(p.childrenNumber ?? "0");
+  if(n==="0") return "Nein, ich habe keine Kinder.";
+  if(n==="1") return "Ja, ich habe ein Kind.";
+  return "Ja, ich habe "+numberWord(n)+" Kinder.";
+}
+function maritalAnswer(p=studentPerson){
+  let m = (p.marital || "ledig").trim();
+  if(m==="verheiratet") return "Ja, ich bin verheiratet.";
+  return "Nein, ich bin "+m+".";
 }
 
 function fillTemplate(t, p=studentPerson){
@@ -814,7 +843,9 @@ function fillTemplate(t, p=studentPerson){
           .replaceAll("{spell_fname}", spell)
           .replaceAll("{spell_lname}", spellLast)
           .replaceAll("{spell_fname_space}", spellSpace)
-          .replaceAll("{spell_lname_space}", spellLastSpace);
+          .replaceAll("{spell_lname_space}", spellLastSpace)
+          .replaceAll("{children_answer}", childrenAnswer(p))
+          .replaceAll("{marital_answer}", maritalAnswer(p));
 }
 
 function generatePersonForAnswers(){
@@ -827,70 +858,61 @@ function generatePersonForAnswers(){
   return {fname, lname, full: `${fname} ${lname}`, origin, lang: meta.lang, city: meta.city, birthplace: meta.birthplace, age: String(18 + Math.floor(Math.random()*45))};
 }
 
+function childText(n){
+  n = String(n ?? "0");
+  const words = {"0":"keine Kinder","1":"ein Kind","2":"zwei Kinder","3":"drei Kinder","4":"vier Kinder","5":"fünf Kinder","6":"sechs Kinder","7":"sieben Kinder","8":"acht Kinder","9":"neun Kinder","10":"zehn Kinder"};
+  return words[n] || (n+" Kinder");
+}
 function buildStudentPerson(){
-  let fname = ($("fname")?.value || DEFAULT_PROFILE.fname).trim();
-  let lname = ($("lname")?.value || DEFAULT_PROFILE.lname).trim();
-  let origin = ($("country")?.value || DEFAULT_PROFILE.origin).trim();
+  let fname = ($("fname")?.value || localStorage.getItem("A1_LAST_FNAME") || DEFAULT_PROFILE.fname).trim();
+  let lname = ($("lname")?.value || localStorage.getItem("A1_LAST_LNAME") || DEFAULT_PROFILE.lname).trim();
+  let origin = ($("country")?.value || localStorage.getItem("A1_LAST_COUNTRY") || DEFAULT_PROFILE.origin).trim();
   let meta = countryMeta(origin);
   return {
     fname,
     lname,
     full: `${fname} ${lname}`.trim(),
     origin,
-    lang: ($("lang")?.value || meta.lang || DEFAULT_PROFILE.lang).trim(),
-    city: ($("city")?.value || DEFAULT_PROFILE.city).trim(),
-    birthplace: ($("birthplace")?.value || DEFAULT_PROFILE.birthplace).trim(),
-    age: ($("age")?.value || DEFAULT_PROFILE.age).trim(),
-    children: ($("children")?.value || DEFAULT_PROFILE.children).trim(),
-    marital: ($("marital")?.value || DEFAULT_PROFILE.marital).trim(),
-    feeling: ""
+    lang: ($("langInput")?.value || localStorage.getItem("A1_LAST_LANG") || meta.lang || DEFAULT_PROFILE.lang).trim(),
+    city: ($("cityInput")?.value || localStorage.getItem("A1_LAST_CITY") || DEFAULT_PROFILE.city).trim(),
+    birthplace: ($("birthplaceInput")?.value || localStorage.getItem("A1_LAST_BIRTHPLACE") || "").trim(),
+    age: ($("ageInput")?.value || localStorage.getItem("A1_LAST_AGE") || DEFAULT_PROFILE.age).trim(),
+    childrenNumber: ($("childrenInput")?.value || localStorage.getItem("A1_LAST_CHILDREN") || "0").trim(),
+    children: childText($("childrenInput")?.value || localStorage.getItem("A1_LAST_CHILDREN") || "0"),
+    marital: ($("maritalInput")?.value || localStorage.getItem("A1_LAST_MARITAL") || DEFAULT_PROFILE.marital).trim()
   };
 }
 
-function applyProfileToLogin(p){
-  if(!p) return;
-  if($("fname")) $("fname").value=p.fname||"";
-  if($("lname")) $("lname").value=p.lname||"";
-  if($("country")) $("country").value=p.origin||"";
-  if($("lang")) $("lang").value=p.lang||"";
-  if($("city")) $("city").value=p.city||"";
-  if($("birthplace")) $("birthplace").value=p.birthplace||"";
-  if($("age")) $("age").value=p.age||"";
-  if($("children")) $("children").value=p.children||"";
-  if($("marital")) $("marital").value=p.marital||"";
-}
-
-function validateLogin(){
-  let required=["fname","lname","course","gender","country","lang","city","age","birthplace","children","marital"];
-  for(let id of required){
+function start(){
+  let requiredIds = ["fname","lname","course","country","langInput","cityInput","ageInput","birthplaceInput","childrenInput","maritalInput"];
+  for(let id of requiredIds){
     let el=$(id);
-    if(!el || !String(el.value||"").trim()){
+    if(el && !String(el.value||"").trim()){
       alert("Bitte alle Pflichtfelder ausfüllen.");
-      if(el) el.focus();
-      return false;
+      el.focus();
+      return;
     }
   }
-  return true;
-}
-
-function enterApp(){
-  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
-  $("hello").innerText="Hallo, "+(studentPerson.fname||student)+"!";
-  stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons(); render();
-}
-
-function start(){
-  if(!validateLogin()) return;
   studentPerson = buildStudentPerson();
   student = studentPerson.full;
-  course=$("course").value.trim(); 
-  gender=$("gender").value; 
-  country=studentPerson.origin;
-  game="learn"; i=0; questionOrder=DATA.map((_,idx)=>idx);
-  loadLocal();
-  if(!studentPerson || !studentPerson.fname) studentPerson = buildStudentPerson();
-  saveLocal();
-  enterApp();
+  course = $("course").value.trim() || "A1";
+  country = studentPerson.origin;
+  gender = "";
+  localStorage.setItem("A1_ACTIVE_USER", JSON.stringify({student,course}));
+  localStorage.setItem("A1_LAST_FNAME", studentPerson.fname);
+  localStorage.setItem("A1_LAST_LNAME", studentPerson.lname);
+  localStorage.setItem("A1_LAST_COUNTRY", studentPerson.origin);
+  localStorage.setItem("A1_LAST_LANG", studentPerson.lang);
+  localStorage.setItem("A1_LAST_CITY", studentPerson.city);
+  localStorage.setItem("A1_LAST_BIRTHPLACE", studentPerson.birthplace);
+  localStorage.setItem("A1_LAST_AGE", studentPerson.age);
+  localStorage.setItem("A1_LAST_CHILDREN", studentPerson.childrenNumber);
+  localStorage.setItem("A1_LAST_MARITAL", studentPerson.marital);
+  loadLocal(); 
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("hello").innerText="Hallo, "+studentPerson.fname+"!";
+  stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons(); render();
+  setTimeout(()=>{$("game")?.scrollIntoView({behavior:"smooth", block:"start"});},50);
 }
 
 function restoreSession(){
@@ -916,9 +938,7 @@ function setupLoginHelpers(){
 
 window.addEventListener("DOMContentLoaded",()=>{setupLoginHelpers(); restoreSession();});
 
-function logout(){
-  if(confirm("Wirklich abmelden?")){localStorage.removeItem("A1_ACTIVE_SESSION"); location.reload()}
-}
+function logout(){ if(confirm("Wirklich abmelden?")){ localStorage.removeItem("A1_ACTIVE_USER"); location.reload(); } }
 
 function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
 function back(){location.reload()}
@@ -938,17 +958,7 @@ function updateExerciseTracker(){
   $("exerciseTracker").innerHTML = html;
 }
 
-function renderGameButtons(){
-  let html = '';
-  EXERCISES.forEach(ex => {
-    let isLocked = ex === "exam" && !allTrainingComplete();
-    let title = isLocked ? "Prüfung erst nach allen erledigten Aufgaben" : EXERCISE_NAMES[ex];
-    html += `<button class="gamebtn ${isLocked ? 'locked' : ''}" onclick="${isLocked ? "alert('Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.')" : `mode('${ex}')`}" ${isLocked ? 'disabled' : ''}>
-      ${title}
-    </button>`;
-  });
-  let gb=$("gameButtons"); if(gb) gb.innerHTML = html;
-}
+function renderGameButtons(){ $("gameButtons").innerHTML = ""; }
 
 function mode(m){
   if(m === "exam" && !allTrainingComplete()){
@@ -1028,29 +1038,46 @@ function clean(t){
 function answerVariants(x=item(), p=studentPerson){
   let templates = x.answerTemplates || x.alts || (x.a ? [x.a] : []);
   let variants = templates.map(t => fillTemplate(t, p));
+
   if(x.topic==="Name"){
-    let f=p.fname||DEFAULT_PROFILE.fname, l=p.lname||DEFAULT_PROFILE.lname, full=(p.full||`${f} ${l}`).trim();
-    variants.push(`Ich heiße ${f}.`, `Ich heiße ${full}.`, `Ich bin ${f}.`, `Ich bin ${full}.`, `Mein Name ist ${f}.`, `Mein Name ist ${full}.`, f, full);
+    variants.push(
+      `Ich heiße ${p.fname}.`,
+      `Ich heiße ${p.full}.`,
+      `Mein Name ist ${p.fname}.`,
+      `Mein Name ist ${p.full}.`,
+      `Ich bin ${p.fname}.`,
+      `Ich bin ${p.full}.`
+    );
   }
+
   if(x.topic==="Kinder"){
-    let ch=p.children||DEFAULT_PROFILE.children;
-    const numMap={"ein Kind":"1 Kind","zwei Kinder":"2 Kinder","drei Kinder":"3 Kinder","vier Kinder":"4 Kinder","fünf Kinder":"5 Kinder","sechs Kinder":"6 Kinder","sieben Kinder":"7 Kinder","acht Kinder":"8 Kinder","neun Kinder":"9 Kinder","zehn Kinder":"10 Kinder"};
-    if(ch.includes("keine")) variants = ["Nein, ich habe keine Kinder.", "Ich habe keine Kinder.", "Nein."];
-    else {
-      let n=numMap[ch]||ch;
-      variants = [`Ja, ich habe ${ch}.`, `Ich habe ${ch}.`, `Ja, ich habe ${n}.`, `Ich habe ${n}.`, "Ja."];
+    let n = String(p.childrenNumber ?? "0");
+    if(n==="0"){
+      variants.push("Nein, ich habe keine Kinder.","Ich habe keine Kinder.","Nein.");
+    }else if(n==="1"){
+      variants.push("Ja, ich habe ein Kind.","Ich habe ein Kind.","Ja, ich habe 1 Kind.","Ich habe 1 Kind.","Ja.");
+    }else{
+      variants.push(`Ja, ich habe ${numberWord(n)} Kinder.`,`Ich habe ${numberWord(n)} Kinder.`,`Ja, ich habe ${n} Kinder.`,`Ich habe ${n} Kinder.`,"Ja.");
     }
   }
+
   if(x.topic==="Familienstand"){
-    let m=p.marital||DEFAULT_PROFILE.marital;
-    variants = m==="verheiratet" ? ["Ja, ich bin verheiratet.", "Ich bin verheiratet.", "Ja."] : [`Nein, ich bin ${m}.`, `Ich bin ${m}.`, "Nein."];
+    let m = p.marital || "ledig";
+    if(m==="verheiratet") variants.push("Ja, ich bin verheiratet.","Ich bin verheiratet.","Ja.");
+    else variants.push(`Nein, ich bin ${m}.`,`Ich bin ${m}.`,"Nein.");
   }
-  if(x.topic==="Befinden"){
-    variants = ["Es geht mir sehr gut.","Es geht mir gut.","Super.","Es geht mir super.","Es geht.","Gut.","Nicht so gut.","Es geht mir nicht so gut.","Es geht mir schlecht.","Schlecht."];
-  }
-  if(x.spellType){
-    let n = x.spellType === "lname" ? (p.lname || DEFAULT_PROFILE.lname) : (p.fname || DEFAULT_PROFILE.fname);
-    variants.push(n.toUpperCase().split("").join("-"), n.toLowerCase().split("").join(" "), n.toUpperCase().split("").join(" "), n);
+
+  if(x.topic && x.topic.startsWith("Buchstabieren")){
+    let names = x.topic.includes("Nachname") ? [p.lname || DEFAULT_PROFILE.lname] : [p.fname || DEFAULT_PROFILE.fname];
+    names.forEach(n=>{
+      variants.push(
+        n.toUpperCase().split("").join("-"),
+        n.toLowerCase().split("").join(" "),
+        n.toUpperCase().split("").join(" "),
+        n.toLowerCase().split("").join("-"),
+        n
+      );
+    });
   }
   return [...new Set(variants.filter(Boolean))];
 }
@@ -1174,13 +1201,14 @@ function getCrossTopicAnswers(){
 
 function responseHint(){
   let x=item();
+  if(game==="puzzle") return "Baue die Frage mit allen Wörtern in der richtigen Reihenfolge. Es geht um die Frage, nicht um die Antwort.";
   if(x.topic==="Name") return "Beginnen Sie zum Beispiel mit: Ich heiße ...";
   if(x.topic==="Heimatland") return "Beginnen Sie zum Beispiel mit: Ich komme aus ...";
   if(x.topic==="Sprache") return "Beginnen Sie zum Beispiel mit: Ich spreche ...";
   if(x.topic==="Wohnort") return "Beginnen Sie zum Beispiel mit: Ich wohne in ...";
   if(x.topic==="Alter") return "Beginnen Sie zum Beispiel mit: Ich bin ... Jahre alt.";
   if(x.topic==="Geburtsort") return "Beginnen Sie zum Beispiel mit: Ich bin in ... geboren.";
-  if(x.spellType) return "Sagen oder schreiben Sie die Buchstaben einzeln, z. B. a l i s a.";
+  if(x.topic && x.topic.startsWith("Buchstabieren")) return "Sagen oder schreiben Sie die Buchstaben einzeln, z. B. a l i.";
   return "Hören Sie die Frage noch einmal und antworten Sie mit einem ganzen Satz.";
 }
 
@@ -1497,38 +1525,78 @@ function listenSpeech(){
   };
 }
 
+
 function setupMemory(){
-  memoryCards=[];
-  DATA.forEach((x,idx)=>{
-    let oldOrder=questionOrder, oldI=i;
-    questionOrder=DATA.map((_,j)=>j); i=idx;
-    let ans=getAnswer();
-    questionOrder=oldOrder; i=oldI;
-    memoryCards.push({pair:idx,type:"q",text:x.qSie,open:false,done:false},{pair:idx,type:"a",text:ans,open:false,done:false});
+  first = null;
+  lock = false;
+  memoryCards = [];
+  DATA.forEach((x, j) => {
+    memoryCards.push(
+      {pair:j, kind:"q", text:x.qSie, open:false, done:false},
+      {pair:j, kind:"a", text:(answerVariants(x)[0] || "..."), open:false, done:false}
+    );
   });
-  memoryCards=shuffle(memoryCards);
-  first=null; lock=false;
+  memoryCards = shuffle(memoryCards);
+}
+
+function renderMemoryGrid(){
+  let grid = $("memoryGrid");
+  if(!grid) return;
+  grid.innerHTML = memoryCards.map((c,idx)=>`<button type="button" class="memcard ${c.open?'open':''} ${c.done?'done':''}" data-idx="${idx}">${(c.open||c.done)?c.text:"?"}</button>`).join("");
+  document.querySelectorAll(".memcard").forEach(card => {
+    card.addEventListener("click", () => flip(Number(card.dataset.idx)));
+  });
 }
 
 function flip(idx){
-  if(lock||memoryCards[idx].done||memoryCards[idx].open)return;
-  memoryCards[idx].open=true;
-  if(first===null){first=idx;render();return}
-  lock=true;
-  setTimeout(()=>{
-    if(memoryCards[first].pair===memoryCards[idx].pair && memoryCards[first].type!==memoryCards[idx].type){
-      memoryCards[first].done=memoryCards[idx].done=true;
-      mark(true);
-      if(memoryCards.every(c=>c.done)){exerciseProgress.memory=100; saveLocal();}
-      first=null;
+  if(lock) return;
+  let card = memoryCards[idx];
+  if(!card || card.done || card.open) return;
+
+  card.open = true;
+  renderMemoryGrid();
+
+  if(first === null){
+    first = idx;
+    return;
+  }
+
+  if(first === idx) return;
+  lock = true;
+  attempts++;
+
+  let firstCard = memoryCards[first];
+  let secondCard = memoryCards[idx];
+  let good = firstCard && secondCard && firstCard.pair === secondCard.pair && firstCard.kind !== secondCard.kind;
+
+  setTimeout(() => {
+    if(good){
+      firstCard.done = true;
+      secondCard.done = true;
+      correct++;
+      score += 10;
+      if($("feedback")) $("feedback").innerHTML = "<div class='ok'>✔ Paar gefunden! +10 Punkte</div>";
     }else{
-      memoryCards[first].open=memoryCards[idx].open=false;
-      mark(false);
-      first=null;
+      firstCard.open = false;
+      secondCard.open = false;
+      if($("feedback")) $("feedback").innerHTML = "<div class='no'>❌ Kein Paar. Versuch es noch einmal.</div>";
     }
-    lock=false;
-    render();
-  },900);
+
+    first = null;
+    lock = false;
+
+    if(memoryCards.length && memoryCards.every(c=>c.done)){
+      exerciseProgress.memory = 100;
+      if($("feedback")) $("feedback").innerHTML += `<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`;
+      setTimeout(()=>{ let b=$("continueExerciseBtn"); if(b) b.onclick=()=>goNextExercise(); },0);
+    }
+
+    saveLocal();
+    updateStatsBox();
+    updateExerciseTracker();
+    renderGameButtons();
+    renderMemoryGrid();
+  }, 700);
 }
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
