@@ -710,6 +710,8 @@ let student="", course="", gender="", country="", game="learn", i=0, score=0, at
 let dashboard=[], answerHistory=[], memoryCards=[], first=null, lock=false;
 let exerciseProgress = {};
 let studentPerson = {};
+let currentQuestion = null;
+let currentAnswer = null;
 
 function $(id){return document.getElementById(id)}
 function item(){return DATA[i%DATA.length]}
@@ -895,140 +897,236 @@ function getRandomizedAnswers(){
   return shuffle([correctAnswer, ...otherAnswers.slice(0, 3)]);
 }
 
-function esc(t){return (t||"").replace(/'/g, "\\'").replace(/"/g, "&quot;")}
-
 function render(){
-  let x=item(), q=x.qSie;
-  let html=`<h2>${EXERCISE_NAMES[game]}</h2><p class="small">Thema: ${x.topic}</p>`;
-  
-  if(game==="learn"){
-    let answer = getAnswer();
-    let alts = x.alts ? x.alts.map(a => a.replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang)) : [];
-    let qEsc = esc(q);
-    let answerEsc = esc(answer);
-    html+=`<div class="big">${q}</div><p>${x.qDu}</p>
-    <button onclick="speakText('${qEsc}')">🔊 Frage hören</button>
-    <button onclick="speakText('${answerEsc}')">🔊 Antwort hören</button>
-    <h3>📝 Antwort:</h3><p class="big">${answer}</p>
-    <h3>💡 Alternativen:</h3>${alts.map(a=>`<p>• ${a}</p>`).join("")}
-    <button class="success" onclick="next()">⏭️ Nächste Frage</button>`;
-  }
-  
-  if(game==="qa"){
-    html+=`<div class="big">${q}</div>
-    <p class="small">Versuche die Frage zu beantworten, bevor du unten klickst.</p>
-    <input id="ans" placeholder="Schreibe deine Antwort...">
-    <button onclick="checkAnswer()">Überprüfen</button>
-    <button class="secondary" onclick="showAnswer()">Lösung anzeigen</button>
-    <div id="feedback"></div>`;
-  }
-  
-  if(game==="quickfire"){
-    let opts=getRandomizedAnswers();
-    html+=`<div class="big">${q}</div><p>⚡ Wähle schnell die richtige Antwort!</p>`
-      +opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")
-      +`<div id="feedback"></div>`;
-  }
-  
-  if(game==="listen"){
-    let opts=getRandomizedAnswers();
-    let qEsc = esc(q);
-    html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
-    <button onclick="speakText('${qEsc}')">🔊 Frage abspielen</button><br>
-    ${opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")}
-    <div id="feedback"></div>`;
-  }
-  
-  if(game==="listenrespond"){
-    let answer = getAnswer();
-    html+=`<p>🎤 Höre die Frage und antworte mündlich!</p>
-    <button onclick="speakQuestion()">🔊 Frage abspielen</button>
-    <p id="questionText" style="font-style:italic; margin:15px 0;"></p>
-    <button onclick="listenAndRespond()">🎤 Antworte mit deiner Stimme</button>
-    <p id="heard"></p>
-    <div id="feedback"></div>
-    <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
-    <button class="success hidden" id="listenContinue" onclick="next()">⏭️ Nächste Frage</button>`;
+  try {
+    let x=item(), q=x.qSie;
+    let html=`<h2>${EXERCISE_NAMES[game]}</h2><p class="small">Thema: ${x.topic}</p>`;
     
+    if(game==="learn"){
+      let answer = getAnswer();
+      let alts = x.alts ? x.alts.map(a => a.replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang)) : [];
+      
+      currentQuestion = q;
+      currentAnswer = answer;
+      
+      html+=`<div class="big">${q}</div><p>${x.qDu}</p>
+      <button id="speakQuestion">🔊 Frage hören</button>
+      <button id="speakAnswer">🔊 Antwort hören</button>
+      <h3>📝 Antwort:</h3><p class="big">${answer}</p>
+      <h3>💡 Alternativen:</h3>${alts.map(a=>`<p>• ${a}</p>`).join("")}
+      <button class="success" id="nextBtn">⏭️ Nächste Frage</button>`;
+    }
+    
+    if(game==="qa"){
+      html+=`<div class="big">${q}</div>
+      <p class="small">Versuche die Frage zu beantworten, bevor du unten klickst.</p>
+      <input id="ans" placeholder="Schreibe deine Antwort...">
+      <button id="checkBtn">Überprüfen</button>
+      <button class="secondary" id="showBtn">Lösung anzeigen</button>
+      <div id="feedback"></div>`;
+    }
+    
+    if(game==="quickfire"){
+      let opts=getRandomizedAnswers();
+      html+=`<div class="big">${q}</div><p>⚡ Wähle schnell die richtige Antwort!</p>`;
+      opts.forEach(o => {
+        html += `<button class="option quiz-option" data-answer="${o}">${o}</button>`;
+      });
+      html += `<div id="feedback"></div>`;
+    }
+    
+    if(game==="listen"){
+      let opts=getRandomizedAnswers();
+      currentQuestion = q;
+      html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
+      <button id="playQuestion">🔊 Frage abspielen</button><br>`;
+      opts.forEach(o => {
+        html += `<button class="option listen-option" data-answer="${o}">${o}</button>`;
+      });
+      html += `<div id="feedback"></div>`;
+    }
+    
+    if(game==="listenrespond"){
+      let answer = getAnswer();
+      currentQuestion = q;
+      currentAnswer = answer;
+      html+=`<p>🎤 Höre die Frage und antworte mündlich!</p>
+      <button id="playQuestionRespond">🔊 Frage abspielen</button>
+      <p id="questionText" style="font-style:italic; margin:15px 0;"></p>
+      <button id="recordRespond">🎤 Antworte mit deiner Stimme</button>
+      <p id="heard"></p>
+      <div id="feedback"></div>
+      <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
+      <button class="success hidden" id="listenContinue">⏭️ Nächste Frage</button>`;
+    }
+    
+    if(game==="dictation"){
+      let answer = getAnswer();
+      currentAnswer = answer;
+      html+=`<p>✍️ Höre und schreibe die Antwort.</p>
+      <button id="dictateBtn">🔊 Antwort hören</button>
+      <input id="ans" placeholder="Schreibe hier...">
+      <button id="checkDictBtn">Überprüfen</button>
+      <div id="feedback"></div>`;
+    }
+    
+    if(game==="puzzle"){
+      let words=shuffle(x.qSie.replace("?"," ?").split(" "));
+      html+=`<p>🧩 Baue die Frage richtig zusammen.</p>
+      <div style="background:#f0f4ff; padding:15px; border-radius:10px; margin:10px 0;">
+        <div id="chosen" style="min-height:40px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;"></div>
+      </div>
+      <div style="margin:15px 0;" id="wordList"></div>
+      <button id="checkPuzzleBtn">Überprüfen</button>
+      <button class="secondary" id="resetPuzzleBtn">Neu</button>
+      <div id="feedback"></div>`;
+    }
+    
+    if(game==="speak"){
+      let answer = getAnswer();
+      currentQuestion = q;
+      currentAnswer = answer;
+      html+=`<div class="big">${q}</div>
+      <p>🎤 Sprich die Antwort. Chrome/Android funktioniert meistens am besten.</p>
+      <button id="recordSpeakBtn">🎤 Aufnahme starten</button>
+      <p id="heard"></p>
+      <div id="feedback"></div>
+      <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
+      <button class="success hidden" id="speakContinue">⏭️ Nächste Frage</button>`;
+    }
+    
+    if(game==="exam"){
+      let answer = getAnswer();
+      currentQuestion = q;
+      currentAnswer = answer;
+      html+=`<div class="big">${q}</div>
+      <input id="ans" placeholder="Antwort schreiben">
+      <button id="checkExamBtn">Überprüfen</button>
+      <button id="speakExamBtn">🔊 Frage hören</button>
+      <button class="success" id="nextExamBtn">⏭️ Nächste Prüfungsfrage</button>
+      <div id="feedback"></div>`;
+    }
+    
+    if(game==="memory"){
+      html+=`<p>🃏 Finde Frage und passende Antwort.</p>
+      <div class="memory" id="memoryGrid"></div>`;
+    }
+    
+    $("game").innerHTML=html;
+    attachEventListeners();
+    updateStatsBox();
+  } catch(e) {
+    console.error("Render error:", e);
+    alert("Fehler beim Laden der Übung. Bitte laden Sie die Seite neu.");
+  }
+}
+
+function attachEventListeners(){
+  // Learn events
+  if(game === "learn"){
+    let speakQ = $("speakQuestion");
+    let speakA = $("speakAnswer");
+    let next = $("nextBtn");
+    if(speakQ) speakQ.onclick = () => speakText(currentQuestion);
+    if(speakA) speakA.onclick = () => speakText(currentAnswer);
+    if(next) next.onclick = () => { i++; render(); };
+  }
+  
+  // QA events
+  if(game === "qa"){
+    let check = $("checkBtn");
+    let show = $("showBtn");
+    if(check) check.onclick = () => { let u=$("ans").value; if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)} };
+    if(show) show.onclick = () => $("ans").value = getAnswer();
+  }
+  
+  // Quickfire events
+  if(game === "quickfire"){
+    document.querySelectorAll(".quiz-option").forEach(btn => {
+      btn.onclick = () => { let ans = btn.dataset.answer; if(ans===getAnswer()||ok(ans,getAnswer())){mark(true,ans)}else{mark(false,ans)} };
+    });
+  }
+  
+  // Listen events
+  if(game === "listen"){
+    let play = $("playQuestion");
+    if(play) play.onclick = () => speakText(currentQuestion);
+    document.querySelectorAll(".listen-option").forEach(btn => {
+      btn.onclick = () => { let ans = btn.dataset.answer; if(ans===getAnswer()||ok(ans,getAnswer())){mark(true,ans)}else{mark(false,ans)} };
+    });
+  }
+  
+  // Listen Respond events
+  if(game === "listenrespond"){
+    let play = $("playQuestionRespond");
+    let record = $("recordRespond");
+    let cont = $("listenContinue");
+    if(play) play.onclick = () => speakText(currentQuestion);
+    if(record) record.onclick = listenAndRespond;
+    if(cont) cont.onclick = () => { i++; render(); };
     setTimeout(() => {
-      $("questionText").innerText = q;
+      $("questionText").innerText = currentQuestion;
     }, 100);
   }
   
-  if(game==="dictation"){
-    let answer = getAnswer();
-    let answerEsc = esc(answer);
-    html+=`<p>✍️ Höre und schreibe die Antwort.</p>
-    <button onclick="speakText('${answerEsc}')">🔊 Antwort hören</button>
-    <input id="ans" placeholder="Schreibe hier...">
-    <button onclick="checkWrite()">Überprüfen</button>
-    <div id="feedback"></div>`;
+  // Dictation events
+  if(game === "dictation"){
+    let dictate = $("dictateBtn");
+    let check = $("checkDictBtn");
+    if(dictate) dictate.onclick = () => speakText(currentAnswer);
+    if(check) check.onclick = () => { let u=$("ans").value; if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)} };
   }
   
-  if(game==="puzzle"){
-    let words=shuffle(x.qSie.replace("?"," ?").split(" "));
-    html+=`<p>🧩 Baue die Frage richtig zusammen.</p>
-    <div style="background:#f0f4ff; padding:15px; border-radius:10px; margin:10px 0;">
-      <div id="chosen" style="min-height:40px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;"></div>
-    </div>
-    <div style="margin:15px 0;">${words.map(w=>`<button class="word" onclick="addWord(this)">${w}</button>`).join("")}</div>
-    <button onclick="checkPuzzle()">Überprüfen</button>
-    <button class="secondary" onclick="render()">Neu</button>
-    <div id="feedback"></div>`;
+  // Puzzle events
+  if(game === "puzzle"){
+    let x = item();
+    let words = shuffle(x.qSie.replace("?"," ?").split(" "));
+    let wordList = $("wordList");
+    wordList.innerHTML = words.map(w=>`<button class="word puzzle-word">${w}</button>`).join("");
+    document.querySelectorAll(".puzzle-word").forEach(btn => {
+      btn.onclick = () => {
+        let chosen = $("chosen");
+        chosen.appendChild(btn.cloneNode(true));
+        btn.style.opacity="0.5";
+      };
+    });
+    let checkPuzzle = $("checkPuzzleBtn");
+    let resetPuzzle = $("resetPuzzleBtn");
+    if(checkPuzzle) checkPuzzle.onclick = () => {
+      let chosen=$("chosen").innerText.trim().split(" ").filter(w=>w);
+      let correct=x.qSie.replace("?"," ?").split(" ");
+      if(JSON.stringify(chosen)===JSON.stringify(correct)){mark(true)}else{mark(false)}
+    };
+    if(resetPuzzle) resetPuzzle.onclick = () => render();
   }
   
-  if(game==="speak"){
-    let answer = getAnswer();
-    let qEsc = esc(q);
-    html+=`<div class="big">${q}</div>
-    <p>🎤 Sprich die Antwort. Chrome/Android funktioniert meistens am besten.</p>
-    <button onclick="listenSpeech()">🎤 Aufnahme starten</button>
-    <p id="heard"></p>
-    <div id="feedback"></div>
-    <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
-    <button class="success hidden" id="speakContinue" onclick="next()">⏭️ Nächste Frage</button>`;
+  // Speak events
+  if(game === "speak"){
+    let record = $("recordSpeakBtn");
+    let cont = $("speakContinue");
+    if(record) record.onclick = listenSpeech;
+    if(cont) cont.onclick = () => { i++; render(); };
   }
   
-  if(game==="exam"){
-    let answer = getAnswer();
-    let qEsc = esc(q);
-    html+=`<div class="big">${q}</div>
-    <input id="ans" placeholder="Antwort schreiben">
-    <button onclick="checkWrite()">Überprüfen</button>
-    <button onclick="speakText('${qEsc}')">🔊 Frage hören</button>
-    <button class="success" onclick="next()">⏭️ Nächste Prüfungsfrage</button>
-    <div id="feedback"></div>`;
+  // Exam events
+  if(game === "exam"){
+    let check = $("checkExamBtn");
+    let speak = $("speakExamBtn");
+    let next = $("nextExamBtn");
+    if(check) check.onclick = () => { let u=$("ans").value; if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)} };
+    if(speak) speak.onclick = () => speakText(currentQuestion);
+    if(next) next.onclick = () => { i++; render(); };
   }
   
-  if(game==="memory"){
-    html+=`<p>🃏 Finde Frage und passende Antwort.</p>
-    <div class="memory">${memoryCards.map((c,idx)=>`<div class="memcard ${c.open?'open':''} ${c.done?'done':''}" onclick="flip(${idx})">${c.open||c.done?c.text:"?"}</div>`).join("")}</div>`;
+  // Memory events
+  if(game === "memory"){
+    let grid = $("memoryGrid");
+    grid.innerHTML = memoryCards.map((c,idx)=>`<div class="memcard" data-idx="${idx}">${c.open||c.done?c.text:"?"}</div>`).join("");
+    document.querySelectorAll(".memcard").forEach(card => {
+      card.onclick = () => flip(parseInt(card.dataset.idx));
+    });
   }
-  
-  $("game").innerHTML=html;
-  updateStatsBox();
 }
-
-function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function next(){i++;render()}
-function checkAnswer(){let u=$("ans").value;if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)}}
-function showAnswer(){$("ans").value=getAnswer()}
-function checkWrite(){let u=$("ans").value;if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)}}
-function quiz(a){if(a===getAnswer()||ok(a,getAnswer())){mark(true,a)}else{mark(false,a)}}
-
-function checkPuzzle(){
-  let chosen=$("chosen").innerText.trim().split(" ").filter(w=>w);
-  let correct=x.qSie.replace("?"," ?").split(" ");
-  if(JSON.stringify(chosen)===JSON.stringify(correct)){mark(true)}else{mark(false)}
-}
-
-function addWord(btn){
-  let chosen=$("chosen");
-  chosen.appendChild(btn.cloneNode(true));
-  btn.style.opacity="0.5";
-}
-
-function speakQuestion(){speakText(item().qSie)}
 
 function listenAndRespond(){
   if(!('webkitSpeechRecognition' in window)){alert("Speech Recognition nicht unterstützt. Versuchen Sie Chrome oder Edge.");return}
@@ -1083,6 +1181,8 @@ function flip(idx){
     render();
   },1000);
 }
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
 function showStats(){
   let html=`<div class="stats">`;
