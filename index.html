@@ -73,6 +73,12 @@ button:hover {
 
 button:active { transform: translateY(0); }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 button.secondary {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
@@ -94,6 +100,12 @@ button.gamebtn {
   justify-content: center;
   text-align: center;
   min-width: 140px;
+}
+
+button.locked {
+  background: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 input, textarea, select {
@@ -170,6 +182,10 @@ input:focus, textarea:focus, select:focus {
 }
 
 .word:hover { transform: scale(1.05); }
+
+.word:disabled {
+  opacity: 0.6;
+}
 
 .hidden { display: none !important; }
 
@@ -448,6 +464,64 @@ tr:hover {
   margin-bottom: 8px;
   color: #667eea;
 }
+
+.lock-message {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px 0;
+  color: #856404;
+  font-weight: 600;
+}
+
+.exercise-tracker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.exercise-item {
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  background: #f0f4ff;
+  border: 2px solid #ddd;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.exercise-item:hover:not(.locked) {
+  border-color: #667eea;
+  background: #e3e8ff;
+}
+
+.exercise-item.completed {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  border-color: #4facfe;
+}
+
+.exercise-item.locked {
+  background: #eee;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.exercise-item .name {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.exercise-item .score {
+  display: block;
+  font-size: 0.8em;
+  opacity: 0.8;
+}
 </style>
 </head>
 
@@ -490,7 +564,7 @@ tr:hover {
     <option value="Bulgarien">Bulgarien</option>
     <option value="Somalia">Somalia</option>
     <option value="Eritrea">Eritrea</option>
-    <option value="Eritrea">Ghana">Ghana</option>
+    <option value="Ghana">Ghana</option>
     <option value="Nigeria">Nigeria</option>
   </select>
 </div>
@@ -513,17 +587,9 @@ tr:hover {
 
 <div class="stats" id="statsBox"></div>
 
-<div class="grid card flex-center">
-  <button class="gamebtn" onclick="mode('learn')">📚<br>Lernen</button>
-  <button class="gamebtn" onclick="mode('qa')">🗣️<br>Q&A</button>
-  <button class="gamebtn" onclick="mode('quickfire')">⚡<br>Blitzfeuer</button>
-  <button class="gamebtn" onclick="mode('listen')">🎧<br>Hören</button>
-  <button class="gamebtn" onclick="mode('dictation')">✍️<br>Diktat</button>
-  <button class="gamebtn" onclick="mode('puzzle')">🧩<br>Puzzle</button>
-  <button class="gamebtn" onclick="mode('speak')">🎤<br>Sprechen</button>
-  <button class="gamebtn" onclick="mode('memory')">🃏<br>Memory</button>
-  <button class="gamebtn" onclick="mode('exam')">🏆<br>Prüfung</button>
-</div>
+<div id="exerciseTracker" class="exercise-tracker"></div>
+
+<div class="grid card flex-center" id="gameButtons"></div>
 
 <div class="flex-center">
   <button onclick="showStats()">📊 Meine Statistik</button>
@@ -554,10 +620,12 @@ tr:hover {
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('global')">Global</button>
     <button class="tab-btn" onclick="switchTab('course')">Mein Kurs</button>
+    <button class="tab-btn" onclick="switchTab('progress')">Schüler Fortschritt</button>
   </div>
   
   <div id="global" class="tab-content active leaderboard"></div>
   <div id="course" class="tab-content leaderboard"></div>
+  <div id="progress" class="tab-content"></div>
 </div>
 </section>
 
@@ -575,47 +643,82 @@ tr:hover {
 
 <script>
 const NAMES = {
-  m: ["Ahmed", "Ali", "Hassan", "Mohammed", "Ibrahim", "Khalid", "Omar", "Youssef", "Samir", "Karim"],
-  f: ["Maria", "Fatima", "Layla", "Aisha", "Zara", "Leila", "Hana", "Yasmin", "Noor", "Sara"]
+  m: ["Ahmed", "Ali", "Hassan", "Mohammed", "Ibrahim", "Khalid", "Omar", "Youssef", "Samir", "Karim", "Volodymyr", "Ivan", "Gheorghe", "Alexandru"],
+  f: ["Maria", "Fatima", "Layla", "Aisha", "Zara", "Leila", "Hana", "Yasmin", "Noor", "Sara", "Olena", "Nataliia", "Ioana", "Alina"]
 };
 
-const LANGUAGES = ["Arabisch", "Persisch", "Kurdisch", "Türkisch", "Englisch", "Französisch", "Spanisch", "Russisch", "Polnisch", "Rumänisch"];
+const SURNAMES = {
+  syrian: ["Yilmaz", "Hassan", "Abbas", "Khalil", "Saleh"],
+  ukrainian: ["Kovalenko", "Shevchenko", "Ivanov", "Petrov", "Zelensky"],
+  romanian: ["Popescu", "Ionescu", "Georgescu", "Dumitru", "Mihai"]
+};
+
+const ORIGINS = ["Syrien", "Ukraine", "Rumänien"];
 
 const DATA = [
-  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",a:"Ich heiße Ahmed.",alts:["Ich bin Ahmed.","Mein Name ist Ahmed."],category:"Persönlich"},
-  {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",a:"Mein Vorname ist Ahmed.",alts:["Ich heiße Ahmed."],category:"Persönlich"},
-  {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",a:"Mein Nachname ist Yilmaz.",alts:["Ich heiße Yilmaz."],category:"Persönlich"},
-  {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",a:"Ich komme aus Syrien.",alts:["Ich komme aus der Ukraine.","Ich komme aus Afghanistan."],category:"Herkunft"},
-  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",a:"Ich spreche Arabisch und ein bisschen Deutsch.",alts:["Ich spreche Ukrainisch und ein bisschen Deutsch."],category:"Sprache"},
-  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",a:"A-H-M-E-D",alts:["M-A-R-I-A","A-L-I"],category:"Aussprache"},
-  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",a:"Es geht mir gut.",alts:["Es geht mir sehr gut.","Es geht mir nicht so gut.","Es geht."],category:"Höflichkeit"},
-  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",a:"Ja, ich habe zwei Kinder.",alts:["Nein, ich habe keine Kinder.","Ja, ich habe ein Kind."],category:"Familie"},
-  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",a:"Ja, ich bin verheiratet.",alts:["Nein, ich bin ledig.","Nein, ich bin geschieden.","Nein, ich bin verwitwet."],category:"Familie"},
-  {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",a:"Ich wohne in Berlin.",alts:["Ich wohne in Homburg.","Ich wohne in St. Wendel."],category:"Wohnen"},
-  {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",a:"Ich bin 30 Jahre alt.",alts:["Ich bin 25 Jahre alt.","Ich bin 40 Jahre alt."],category:"Persönlich"},
-  {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",a:"Ich bin in Aleppo geboren.",alts:["Ich bin in Kiew geboren.","Ich bin in Kabul geboren."],category:"Herkunft"},
-  {topic:"Beruf",qSie:"Was ist Ihr Beruf?",qDu:"Was ist dein Beruf?",a:"Ich bin Ingenieur.",alts:["Ich bin Lehrer.","Ich bin Arzt.","Ich bin Krankenpfleger."],category:"Beruf"},
-  {topic:"Arbeit",qSie:"Wo arbeiten Sie?",qDu:"Wo arbeitest du?",a:"Ich arbeite in einer Fabrik.",alts:["Ich arbeite im Krankenhaus.","Ich arbeite in einer Schule."],category:"Beruf"},
-  {topic:"Hobbys",qSie:"Was sind Ihre Hobbys?",qDu:"Was sind deine Hobbys?",a:"Ich spiele Fußball und lese gerne.",alts:["Ich spiele Videospiele.","Ich höre gerne Musik."],category:"Freizeit"},
-  {topic:"Schulbildung",qSie:"Welche Schulbildung haben Sie?",qDu:"Welche Schulbildung hast du?",a:"Ich habe die Realschule abgeschlossen.",alts:["Ich habe das Gymnasium abgeschlossen.","Ich bin ohne Schulabschluss."],category:"Bildung"},
+  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",alts:["Ich heiße {name}.","Ich bin {name}.","Mein Name ist {name}."]},
+  {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",alts:["Mein Vorname ist {fname}.","Ich heiße {fname}."]},
+  {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",alts:["Mein Nachname ist {lname}.","Ich heiße {lname}."]},
+  {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",alts:["Ich komme aus {origin}.","Ich bin aus {origin}."]},
+  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",alts:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}."]},
+  {topic:"Buchstabieren",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",a:"A-H-M-E-D",alts:["M-A-R-I-A","A-L-I"]},
+  {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",a:"Es geht mir gut.",alts:["Es geht mir sehr gut.","Es geht mir nicht so gut.","Es geht."]},
+  {topic:"Kinder",qSie:"Haben Sie Kinder?",qDu:"Hast du Kinder?",a:"Ja, ich habe zwei Kinder.",alts:["Nein, ich habe keine Kinder.","Ja, ich habe ein Kind."]},
+  {topic:"Familienstand",qSie:"Sind Sie verheiratet?",qDu:"Bist du verheiratet?",a:"Ja, ich bin verheiratet.",alts:["Nein, ich bin ledig.","Nein, ich bin geschieden.","Nein, ich bin verwitwet."]},
+  {topic:"Wohnort",qSie:"Wo wohnen Sie?",qDu:"Wo wohnst du?",a:"Ich wohne in Berlin.",alts:["Ich wohne in Homburg.","Ich wohne in St. Wendel."]},
+  {topic:"Alter",qSie:"Wie alt sind Sie?",qDu:"Wie alt bist du?",a:"Ich bin 30 Jahre alt.",alts:["Ich bin 25 Jahre alt.","Ich bin 40 Jahre alt."]},
+  {topic:"Geburtsort",qSie:"Wo sind Sie geboren?",qDu:"Wo bist du geboren?",a:"Ich bin in Aleppo geboren.",alts:["Ich bin in Kiew geboren.","Ich bin in Kabul geboren."]}
 ];
+
+const EXERCISES = ['learn', 'qa', 'quickfire', 'listen', 'dictation', 'puzzle', 'speak', 'memory', 'exam'];
+const EXERCISE_NAMES = {
+  learn: '📚 Lernen',
+  qa: '🗣️ Q&A',
+  quickfire: '⚡ Blitzfeuer',
+  listen: '🎧 Hören',
+  dictation: '✍️ Diktat',
+  puzzle: '🧩 Puzzle',
+  speak: '🎤 Sprechen',
+  memory: '🃏 Memory',
+  exam: '🏆 Prüfung'
+};
 
 let student="", course="", gender="", country="", game="learn", i=0, score=0, attempts=0, correct=0;
 let dashboard=[], answerHistory=[], memoryCards=[], first=null, lock=false;
+let exerciseProgress = {};
+let currentPerson = {};
 
 function $(id){return document.getElementById(id)}
 function item(){return DATA[i%DATA.length]}
 function key(){return "A1_"+course+"_"+student}
-function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,gender,country,score,attempts,correct,i,date:new Date().toLocaleString(),answerHistory,categories:{}}));stats()}
-function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[]}}
+function saveLocal(){localStorage.setItem(key(),JSON.stringify({student,course,gender,country,score,attempts,correct,i,date:new Date().toLocaleString(),answerHistory,exerciseProgress}));stats()}
+function loadLocal(){let x=localStorage.getItem(key());if(x){x=JSON.parse(x);score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{}}}
 function stats(){$("stats").innerHTML=`⭐ Punkte: <strong>${score}</strong> · ✅ Richtig: <strong>${correct}/${attempts}</strong> (${attempts>0?(correct*100/attempts).toFixed(0):0}%)`}
+
+function generatePerson(){
+  let origin = ORIGINS[Math.floor(Math.random() * ORIGINS.length)];
+  let isMale = Math.random() > 0.5;
+  let genderKey = isMale ? 'm' : 'f';
+  let fname = NAMES[genderKey][Math.floor(Math.random() * NAMES[genderKey].length)];
+  let lname = SURNAMES[origin.toLowerCase()][Math.floor(Math.random() * SURNAMES[origin.toLowerCase()].length)];
+  
+  return {
+    fname: fname,
+    lname: lname,
+    full: fname + " " + lname,
+    origin: origin,
+    lang: origin === "Syrien" ? "Arabisch" : origin === "Ukraine" ? "Ukrainisch" : "Rumänisch"
+  };
+}
 
 function start(){
   student=$("name").value.trim(); course=$("course").value.trim(); gender=$("gender").value; country=$("country").value;
   if(!student||!course){alert("Bitte Name und Kurscode eingeben.");return}
-  loadLocal(); $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  loadLocal(); 
+  currentPerson = generatePerson();
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
   $("hello").innerText="Hallo, "+student+"!";
-  stats(); updateStatsBox(); mode("learn");
+  stats(); updateStatsBox(); updateExerciseTracker(); renderGameButtons();
 }
 
 function logout(){
@@ -624,7 +727,64 @@ function logout(){
 
 function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
 function back(){location.reload()}
-function mode(m){game=m;i=0;if(m==="memory")setupMemory();render()}
+
+function updateExerciseTracker(){
+  let html = '';
+  EXERCISES.forEach(ex => {
+    let progress = exerciseProgress[ex] || 0;
+    let isCompleted = progress >= 90;
+    let isLocked = false;
+    let exerciseIdx = EXERCISES.indexOf(ex);
+    
+    if(exerciseIdx > 0){
+      let prevEx = EXERCISES[exerciseIdx - 1];
+      let prevProgress = exerciseProgress[prevEx] || 0;
+      isLocked = prevProgress < 90;
+    }
+    
+    html += `<div class="exercise-item ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}" onclick="${isLocked ? '' : 'mode("'+ex+'")'}">
+      <span class="name">${EXERCISE_NAMES[ex]}</span>
+      <span class="score">${progress}%</span>
+    </div>`;
+  });
+  $("exerciseTracker").innerHTML = html;
+}
+
+function renderGameButtons(){
+  let html = '';
+  EXERCISES.forEach(ex => {
+    let isLocked = false;
+    let exerciseIdx = EXERCISES.indexOf(ex);
+    
+    if(exerciseIdx > 0){
+      let prevEx = EXERCISES[exerciseIdx - 1];
+      let prevProgress = exerciseProgress[prevEx] || 0;
+      isLocked = prevProgress < 90;
+    }
+    
+    html += `<button class="gamebtn ${isLocked ? 'locked' : ''}" onclick="${isLocked ? 'alert("Löse zuerst die vorherige Aufgabe zu 90% ab!")' : 'mode("'+ex+'")'}" ${isLocked ? 'disabled' : ''}>
+      ${EXERCISE_NAMES[ex]}
+    </button>`;
+  });
+  $("gameButtons").innerHTML = html;
+}
+
+function mode(m){
+  let exerciseIdx = EXERCISES.indexOf(m);
+  if(exerciseIdx > 0){
+    let prevEx = EXERCISES[exerciseIdx - 1];
+    let prevProgress = exerciseProgress[prevEx] || 0;
+    if(prevProgress < 90){
+      alert("Löse zuerst "+EXERCISE_NAMES[prevEx]+" zu 90% ab!");
+      return;
+    }
+  }
+  
+  game=m;
+  i=0;
+  if(m==="memory")setupMemory();
+  render();
+}
 
 function updateStatsBox(){
   let accuracy = attempts > 0 ? (correct * 100 / attempts).toFixed(0) : 0;
@@ -643,7 +803,7 @@ function updateStatsBox(){
     </div>
     <div class="stat-box">
       <div class="label">Modus</div>
-      <div class="number">${game.toUpperCase()}</div>
+      <div class="number">${EXERCISE_NAMES[game].split(' ')[0]}</div>
     </div>
   `;
 }
@@ -660,26 +820,40 @@ function mark(good, userAnswer=""){
   let entry = {question: item().topic, correct: good, answer: userAnswer, timestamp: new Date().toLocaleTimeString()};
   answerHistory.push(entry);
   
+  let gameAccuracy = Math.round((correct + (good ? 1 : 0)) * 100 / attempts);
+  exerciseProgress[game] = gameAccuracy;
+  
   if(good){
     correct++;
     score+=10;
     $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>"
   } else {
-    $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Lösung: <strong>"+item().a+"</strong></div>"
+    $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Lösung: <strong>"+getAnswer()+"</strong></div>"
   }
   saveLocal();
 }
 
+function getAnswer(){
+  let x = item();
+  if(x.a) return x.a;
+  if(x.alts && x.alts.length > 0){
+    return x.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang);
+  }
+  return "...";
+}
+
 function render(){
   let x=item(), q=x.qSie;
-  let html=`<h2>${title()}</h2><p class="small">Thema: ${x.topic} · Kategorie: ${x.category}</p>`;
+  let html=`<h2>${EXERCISE_NAMES[game]}</h2><p class="small">Thema: ${x.topic}</p>`;
   
   if(game==="learn"){
+    let answer = getAnswer();
+    let alts = x.alts ? x.alts.map(a => a.replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang)) : [];
     html+=`<div class="big">${q}</div><p>${x.qDu}</p>
     <button onclick="speakText('${q}')">🔊 Frage hören</button>
-    <button onclick="speakText('${x.a}')">🔊 Antwort hören</button>
-    <h3>📝 Antwort:</h3><p class="big">${x.a}</p>
-    <h3>💡 Alternativen:</h3>${x.alts.map(a=>`<p>• ${a}</p>`).join("")}
+    <button onclick="speakText('${answer}')">🔊 Antwort hören</button>
+    <h3>📝 Antwort:</h3><p class="big">${answer}</p>
+    <h3>💡 Alternativen:</h3>${alts.map(a=>`<p>• ${a}</p>`).join("")}
     <button class="success" onclick="next()">⏭️ Nächste Frage</button>`;
   }
   
@@ -693,14 +867,32 @@ function render(){
   }
   
   if(game==="quickfire"){
-    let opts=shuffle([x.a,...DATA.filter(d=>d.topic!==x.topic).slice(0,3).map(d=>d.a)]);
+    let answer = getAnswer();
+    let alts = x.alts ? x.alts.map(a => a.replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang)) : [];
+    let opts=shuffle([answer,...DATA.filter(d=>d.topic!==x.topic).slice(0,2).map(d=>{
+      let da = d.alts ? d.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang) : d.a;
+      return da;
+    }), ...DATA.filter(d=>d.topic!==x.topic).slice(0,1).map(d=>{
+      let oldPerson = generatePerson();
+      let da = d.alts ? d.alts[0].replace("{name}", oldPerson.full).replace("{fname}", oldPerson.fname).replace("{lname}", oldPerson.lname).replace("{origin}", oldPerson.origin).replace("{lang}", oldPerson.lang) : d.a;
+      return da;
+    })]);
     html+=`<div class="big">${q}</div><p>⚡ Wähle schnell die richtige Antwort!</p>`
       +opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")
       +`<div id="feedback"></div>`;
   }
   
   if(game==="listen"){
-    let opts=shuffle([x.a,...DATA.filter(d=>d.topic!==x.topic).slice(0,3).map(d=>d.a)]);
+    let answer = getAnswer();
+    let alts = x.alts ? x.alts.map(a => a.replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang)) : [];
+    let opts=shuffle([answer,...DATA.filter(d=>d.topic!==x.topic).slice(0,2).map(d=>{
+      let da = d.alts ? d.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang) : d.a;
+      return da;
+    }), ...DATA.filter(d=>d.topic!==x.topic).slice(0,1).map(d=>{
+      let oldPerson = generatePerson();
+      let da = d.alts ? d.alts[0].replace("{name}", oldPerson.full).replace("{fname}", oldPerson.fname).replace("{lname}", oldPerson.lname).replace("{origin}", oldPerson.origin).replace("{lang}", oldPerson.lang) : d.a;
+      return da;
+    })]);
     html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
     <button onclick="speakText('${q}')">🔊 Frage abspielen</button><br>
     ${opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")}
@@ -708,8 +900,9 @@ function render(){
   }
   
   if(game==="dictation"){
+    let answer = getAnswer();
     html+=`<p>✍️ Höre und schreibe die Antwort.</p>
-    <button onclick="speakText('${x.a}')">🔊 Antwort hören</button>
+    <button onclick="speakText('${answer}')">🔊 Antwort hören</button>
     <input id="ans" placeholder="Schreibe hier...">
     <button onclick="checkWrite()">Überprüfen</button>
     <div id="feedback"></div>`;
@@ -728,15 +921,18 @@ function render(){
   }
   
   if(game==="speak"){
+    let answer = getAnswer();
     html+=`<div class="big">${q}</div>
     <p>🎤 Sprich die Antwort. Chrome/Android funktioniert meistens am besten.</p>
     <button onclick="listenSpeech()">🎤 Aufnahme starten</button>
     <p id="heard"></p>
     <div id="feedback"></div>
-    <p class="small"><strong>Erwartete Antwort:</strong> ${x.a}</p>`;
+    <p class="small"><strong>Erwartete Antwort:</strong> ${answer}</p>
+    <button class="success hidden" id="speakContinue" onclick="next()">⏭️ Nächste Frage</button>`;
   }
   
   if(game==="exam"){
+    let answer = getAnswer();
     html+=`<div class="big">${q}</div>
     <input id="ans" placeholder="Antwort schreiben">
     <button onclick="checkWrite()">Überprüfen</button>
@@ -752,21 +948,18 @@ function render(){
   
   $("game").innerHTML=html;
   updateStatsBox();
+  updateExerciseTracker();
   saveLocal();
-}
-
-function title(){
-  return {learn:"📚 Lernen",qa:"🗣️ Q&A Modus",quickfire:"⚡ Blitzfeuer",listen:"🎧 Hören",dictation:"✍️ Diktat",puzzle:"🧩 Puzzle",speak:"🎤 Sprechen",memory:"🃏 Memory",exam:"🏆 Prüfung"}[game]
 }
 
 function next(){i++;render()}
 function esc(s){return s.replace(/'/g,"\\'")}
 function shuffle(a){return a.sort(()=>Math.random()-.5)}
 
-function quiz(o){let good=o===item().a;mark(good, o);setTimeout(next,800)}
-function checkAnswer(){let user=$("ans").value; mark(ok(user,item().a), user); setTimeout(next,1200)}
-function showAnswer(){mark(true); $("feedback").innerHTML=`<div class='ok'>✔ Antwort: ${item().a}</div>`; setTimeout(next,1500)}
-function checkWrite(){let user=$("ans").value;mark(ok(user,item().a), user);setTimeout(next,1200)}
+function quiz(o){let answer = getAnswer(); let good=o===answer;mark(good, o);setTimeout(next,800)}
+function checkAnswer(){let user=$("ans").value; let answer = getAnswer(); mark(ok(user,answer), user); setTimeout(next,1200)}
+function showAnswer(){let answer = getAnswer(); mark(true); $("feedback").innerHTML=`<div class='ok'>✔ Antwort: ${answer}</div>`; setTimeout(next,1500)}
+function checkWrite(){let user=$("ans").value; let answer = getAnswer(); mark(ok(user,answer), user);setTimeout(next,1200)}
 function addWord(btn){$("chosen").innerHTML+=`<button class="word" style="pointer-events:none;">${btn.innerText}</button>`;btn.disabled=true}
 function checkPuzzle(){let made=[...$("chosen").querySelectorAll("button")].map(b=>b.innerText).join(" ").replace(" ?","?");mark(made===item().qSie, made)}
 
@@ -774,14 +967,21 @@ function listenSpeech(){
   let R=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!R){alert("Spracherkennung wird in diesem Browser nicht unterstützt.");return}
   let r=new R();r.lang="de-DE";r.start();
-  r.onresult=e=>{let t=e.results[0][0].transcript;$("heard").innerText="Gehört: "+t;mark(ok(t,item().a), t)}
+  r.onresult=e=>{
+    let t=e.results[0][0].transcript;
+    let answer = getAnswer();
+    $("heard").innerText="Gehört: "+t;
+    mark(ok(t,answer), t);
+    document.getElementById("speakContinue").classList.remove("hidden");
+  }
 }
 
 function setupMemory(){
   let small=DATA.slice(0,6);memoryCards=[];
   small.forEach((d,n)=>{
+    let answer = d.alts ? d.alts[0].replace("{name}", currentPerson.full).replace("{fname}", currentPerson.fname).replace("{lname}", currentPerson.lname).replace("{origin}", currentPerson.origin).replace("{lang}", currentPerson.lang) : d.a;
     memoryCards.push({pair:n,text:d.qSie,type:"q",open:false,done:false});
-    memoryCards.push({pair:n,text:d.a,type:"a",open:false,done:false})
+    memoryCards.push({pair:n,text:answer,type:"a",open:false,done:false})
   });
   memoryCards=shuffle(memoryCards);first=null;lock=false;
 }
@@ -801,14 +1001,6 @@ function flip(idx){
 
 function showStats(){
   let accuracy = attempts > 0 ? (correct * 100 / attempts).toFixed(0) : 0;
-  let categoryStats = {};
-  
-  answerHistory.forEach(h => {
-    let cat = DATA.find(d => d.topic === h.question)?.category || "Sonstige";
-    if(!categoryStats[cat]) categoryStats[cat] = {correct: 0, total: 0};
-    categoryStats[cat].total++;
-    if(h.correct) categoryStats[cat].correct++;
-  });
   
   let html = `
     <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
@@ -824,22 +1016,6 @@ function showStats(){
       <div class="number">${accuracy}%</div>
     </div>
   `;
-  
-  html += `<h3 style="color:#667eea; margin-top:30px; grid-column:1/-1;">Nach Kategorie</h3>`;
-  Object.entries(categoryStats).forEach(([cat, stats]) => {
-    let catAccuracy = stats.total > 0 ? (stats.correct * 100 / stats.total).toFixed(0) : 0;
-    html += `
-      <div style="grid-column:1/-1; background:#f9f9f9; padding:15px; border-radius:10px; margin:8px 0;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-          <strong>${cat}</strong>
-          <span>${stats.correct}/${stats.total} (${catAccuracy}%)</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width:${catAccuracy}%">${catAccuracy}%</div>
-        </div>
-      </div>
-    `;
-  });
   
   $("personalStats").innerHTML = html;
   
@@ -896,8 +1072,28 @@ function showLeaderboard(){
     </div>
   `).join("") : "<p>Noch keine Einträge für deinen Kurs</p>";
   
+  let progressHtml = `<table><tr><th>Name</th><th>Kurs</th>`;
+  EXERCISES.forEach(ex => {
+    progressHtml += `<th>${EXERCISE_NAMES[ex]}</th>`;
+  });
+  progressHtml += `<th>Gesamt</th></tr>`;
+  
+  allStudents.forEach(s => {
+    let totalProgress = 0;
+    progressHtml += `<tr><td>${s.student}</td><td>${s.course}</td>`;
+    EXERCISES.forEach(ex => {
+      let prog = s.exerciseProgress && s.exerciseProgress[ex] ? s.exerciseProgress[ex] : 0;
+      totalProgress += prog;
+      let color = prog >= 90 ? '#2ecc71' : prog >= 50 ? '#f39c12' : '#e74c3c';
+      progressHtml += `<td style="text-align:center; color:${color}; font-weight:bold;">${prog}%</td>`;
+    });
+    progressHtml += `<td style="font-weight:bold;">${Math.round(totalProgress/EXERCISES.length)}%</td></tr>`;
+  });
+  progressHtml += `</table>`;
+  
   document.getElementById("global").innerHTML = globalHtml;
   document.getElementById("course").innerHTML = courseHtml;
+  document.getElementById("progress").innerHTML = progressHtml;
   
   $("app").classList.add("hidden");
   $("leaderboardSection").classList.remove("hidden");
