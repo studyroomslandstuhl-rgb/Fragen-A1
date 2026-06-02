@@ -776,7 +776,7 @@ function updateExerciseTracker(){
       isLocked = prevProgress < 90;
     }
     
-    html += `<div class="exercise-item ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}" onclick="${isLocked ? '' : 'mode("'+ex+'")'}">
+    html += `<div class="exercise-item ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}" onclick="${isLocked ? '' : `mode('${ex}')`}">
       <span class="name">${EXERCISE_NAMES[ex]}</span>
       <span class="score">${progress}%</span>
     </div>`;
@@ -796,7 +796,7 @@ function renderGameButtons(){
       isLocked = prevProgress < 90;
     }
     
-    html += `<button class="gamebtn ${isLocked ? 'locked' : ''}" onclick="${isLocked ? 'alert("Löse zuerst die vorherige Aufgabe zu 90% ab!")' : 'mode("'+ex+'")'}" ${isLocked ? 'disabled' : ''}>
+    html += `<button class="gamebtn ${isLocked ? 'locked' : ''}" onclick="${isLocked ? "alert('Löse zuerst die vorherige Aufgabe zu 90% ab!')" : `mode('${ex}')`}" ${isLocked ? 'disabled' : ''}>
       ${EXERCISE_NAMES[ex]}
     </button>`;
   });
@@ -1029,7 +1029,14 @@ function attachEventListeners(){
     let next = $("nextBtn");
     if(speakQ) speakQ.onclick = () => speakText(currentQuestion);
     if(speakA) speakA.onclick = () => speakText(currentAnswer);
-    if(next) next.onclick = () => { i++; render(); };
+    if(next) next.onclick = () => {
+      i++;
+      exerciseProgress.learn = Math.min(100, Math.round((Math.min(i, DATA.length) / DATA.length) * 100));
+      saveLocal();
+      updateExerciseTracker();
+      renderGameButtons();
+      render();
+    };
   }
   
   // QA events
