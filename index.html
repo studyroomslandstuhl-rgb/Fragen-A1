@@ -895,6 +895,8 @@ function getRandomizedAnswers(){
   return shuffle([correctAnswer, ...otherAnswers.slice(0, 3)]);
 }
 
+function esc(t){return (t||"").replace(/'/g, "\\'").replace(/"/g, "&quot;")}
+
 function render(){
   let x=item(), q=x.qSie;
   let html=`<h2>${EXERCISE_NAMES[game]}</h2><p class="small">Thema: ${x.topic}</p>`;
@@ -902,9 +904,11 @@ function render(){
   if(game==="learn"){
     let answer = getAnswer();
     let alts = x.alts ? x.alts.map(a => a.replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang)) : [];
+    let qEsc = esc(q);
+    let answerEsc = esc(answer);
     html+=`<div class="big">${q}</div><p>${x.qDu}</p>
-    <button onclick="speakText('${q}')">🔊 Frage hören</button>
-    <button onclick="speakText('${answer}')">🔊 Antwort hören</button>
+    <button onclick="speakText('${qEsc}')">🔊 Frage hören</button>
+    <button onclick="speakText('${answerEsc}')">🔊 Antwort hören</button>
     <h3>📝 Antwort:</h3><p class="big">${answer}</p>
     <h3>💡 Alternativen:</h3>${alts.map(a=>`<p>• ${a}</p>`).join("")}
     <button class="success" onclick="next()">⏭️ Nächste Frage</button>`;
@@ -928,8 +932,9 @@ function render(){
   
   if(game==="listen"){
     let opts=getRandomizedAnswers();
+    let qEsc = esc(q);
     html+=`<p>🎧 Höre die Frage und wähle die passende Antwort.</p>
-    <button onclick="speakText('${q}')">🔊 Frage abspielen</button><br>
+    <button onclick="speakText('${qEsc}')">🔊 Frage abspielen</button><br>
     ${opts.map(o=>`<button class="option" onclick="quiz('${esc(o)}')">${o}</button>`).join("")}
     <div id="feedback"></div>`;
   }
@@ -952,8 +957,9 @@ function render(){
   
   if(game==="dictation"){
     let answer = getAnswer();
+    let answerEsc = esc(answer);
     html+=`<p>✍️ Höre und schreibe die Antwort.</p>
-    <button onclick="speakText('${answer}')">🔊 Antwort hören</button>
+    <button onclick="speakText('${answerEsc}')">🔊 Antwort hören</button>
     <input id="ans" placeholder="Schreibe hier...">
     <button onclick="checkWrite()">Überprüfen</button>
     <div id="feedback"></div>`;
@@ -973,6 +979,7 @@ function render(){
   
   if(game==="speak"){
     let answer = getAnswer();
+    let qEsc = esc(q);
     html+=`<div class="big">${q}</div>
     <p>🎤 Sprich die Antwort. Chrome/Android funktioniert meistens am besten.</p>
     <button onclick="listenSpeech()">🎤 Aufnahme starten</button>
@@ -984,10 +991,11 @@ function render(){
   
   if(game==="exam"){
     let answer = getAnswer();
+    let qEsc = esc(q);
     html+=`<div class="big">${q}</div>
     <input id="ans" placeholder="Antwort schreiben">
     <button onclick="checkWrite()">Überprüfen</button>
-    <button onclick="speakText('${q}')">🔊 Frage hören</button>
+    <button onclick="speakText('${qEsc}')">🔊 Frage hören</button>
     <button class="success" onclick="next()">⏭️ Nächste Prüfungsfrage</button>
     <div id="feedback"></div>`;
   }
@@ -999,112 +1007,101 @@ function render(){
   
   $("game").innerHTML=html;
   updateStatsBox();
-  updateExerciseTracker();
-  saveLocal();
 }
 
-function speakQuestion(){
-  let x = item();
-  speakText(x.qSie);
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function next(){i++;render()}
+function checkAnswer(){let u=$("ans").value;if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)}}
+function showAnswer(){$("ans").value=getAnswer()}
+function checkWrite(){let u=$("ans").value;if(ok(u,getAnswer())){mark(true,u)}else{mark(false,u)}}
+function quiz(a){if(a===getAnswer()||ok(a,getAnswer())){mark(true,a)}else{mark(false,a)}}
+
+function checkPuzzle(){
+  let chosen=$("chosen").innerText.trim().split(" ").filter(w=>w);
+  let correct=x.qSie.replace("?"," ?").split(" ");
+  if(JSON.stringify(chosen)===JSON.stringify(correct)){mark(true)}else{mark(false)}
 }
+
+function addWord(btn){
+  let chosen=$("chosen");
+  chosen.appendChild(btn.cloneNode(true));
+  btn.style.opacity="0.5";
+}
+
+function speakQuestion(){speakText(item().qSie)}
 
 function listenAndRespond(){
-  let R=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!R){alert("Spracherkennung wird in diesem Browser nicht unterstützt.");return}
-  let r=new R();r.lang="de-DE";r.start();
-  r.onresult=e=>{
-    let t=e.results[0][0].transcript;
-    let answer = getAnswer();
+  if(!('webkitSpeechRecognition' in window)){alert("Speech Recognition nicht unterstützt. Versuchen Sie Chrome oder Edge.");return}
+  let recognition=new webkitSpeechRecognition();
+  recognition.lang='de-DE';
+  recognition.start();
+  recognition.onresult=e=>{
+    let t=e.results[e.results.length-1][0].transcript;
     $("heard").innerText="Gehört: "+t;
-    mark(ok(t,answer), t);
-    document.getElementById("listenContinue").classList.remove("hidden");
-  }
+    if(ok(t,getAnswer())){mark(true,t);$("listenContinue").classList.remove("hidden")}else{mark(false,t)}
+  };
 }
 
-function next(){i++;render()}
-function esc(s){return s.replace(/'/g,"\\'")}
-function shuffle(a){return a.sort(()=>Math.random()-.5)}
-
-function quiz(o){let answer = getAnswer(); let good=o===answer;mark(good, o);setTimeout(next,800)}
-function checkAnswer(){let user=$("ans").value; let answer = getAnswer(); mark(ok(user,answer), user); setTimeout(next,1200)}
-function showAnswer(){let answer = getAnswer(); mark(true); $("feedback").innerHTML=`<div class='ok'>✔ Antwort: ${answer}</div>`; setTimeout(next,1500)}
-function checkWrite(){let user=$("ans").value; let answer = getAnswer(); mark(ok(user,answer), user);setTimeout(next,1200)}
-function addWord(btn){$("chosen").innerHTML+=`<button class="word" style="pointer-events:none;">${btn.innerText}</button>`;btn.disabled=true}
-function checkPuzzle(){let made=[...$("chosen").querySelectorAll("button")].map(b=>b.innerText).join(" ").replace(" ?","?");mark(made===item().qSie, made)}
-
 function listenSpeech(){
-  let R=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!R){alert("Spracherkennung wird in diesem Browser nicht unterstützt.");return}
-  let r=new R();r.lang="de-DE";r.start();
-  r.onresult=e=>{
-    let t=e.results[0][0].transcript;
-    let answer = getAnswer();
-    $("heard").innerText="Gehört: "+t;
-    mark(ok(t,answer), t);
-    document.getElementById("speakContinue").classList.remove("hidden");
-  }
+  if(!('webkitSpeechRecognition' in window)){alert("Speech Recognition nicht unterstützt.");return}
+  let recognition=new webkitSpeechRecognition();
+  recognition.lang='de-DE';
+  recognition.start();
+  recognition.onresult=e=>{
+    let t=e.results[e.results.length-1][0].transcript;
+    $("heard").innerText="Gesprochen: "+t;
+    if(ok(t,getAnswer())){mark(true,t);$("speakContinue").classList.remove("hidden")}else{mark(false,t)}
+  };
 }
 
 function setupMemory(){
-  let small=DATA.slice(0,6);memoryCards=[];
-  small.forEach((d,n)=>{
-    let answer = d.alts ? d.alts[0].replace("{name}", studentPerson.full).replace("{fname}", studentPerson.fname).replace("{lname}", studentPerson.lname).replace("{origin}", studentPerson.origin).replace("{lang}", studentPerson.lang) : d.a;
-    memoryCards.push({pair:n,text:d.qSie,type:"q",open:false,done:false});
-    memoryCards.push({pair:n,text:answer,type:"a",open:false,done:false})
-  });
-  memoryCards=shuffle(memoryCards);first=null;lock=false;
+  memoryCards=[];
+  for(let j=0;j<5;j++){
+    let x=DATA[j%DATA.length];
+    let ans=getAnswer();
+    memoryCards.push({text:x.qSie,open:false,done:false},{text:ans,open:false,done:false});
+  }
+  memoryCards=shuffle(memoryCards);
 }
 
 function flip(idx){
-  if(lock||memoryCards[idx].done||memoryCards[idx].open)return;
-  memoryCards[idx].open=true;
+  if(lock||memoryCards[idx].done)return;
+  memoryCards[idx].open=!memoryCards[idx].open;
   if(first===null){first=idx;render();return}
-  let second=idx;
-  if(memoryCards[first].pair===memoryCards[second].pair&&memoryCards[first].type!==memoryCards[second].type){
-    memoryCards[first].done=true;memoryCards[second].done=true;score+=10;correct++;attempts++;first=null;saveLocal();render();
-  }else{
-    attempts++;lock=true;saveLocal();render();
-    setTimeout(()=>{memoryCards[first].open=false;memoryCards[second].open=false;first=null;lock=false;render()},900)
-  }
+  lock=true;
+  setTimeout(()=>{
+    if(memoryCards[first].text===memoryCards[idx].text){
+      memoryCards[first].done=memoryCards[idx].done=true;
+      mark(true);
+      first=null;
+    }else{
+      memoryCards[first].open=memoryCards[idx].open=false;
+      mark(false);
+      first=null;
+    }
+    lock=false;
+    render();
+  },1000);
 }
 
 function showStats(){
-  let accuracy = attempts > 0 ? (correct * 100 / attempts).toFixed(0) : 0;
-  
-  let html = `
-    <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-      <div class="label">Gesamtpunkte</div>
-      <div class="number">${score}</div>
-    </div>
-    <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-      <div class="label">Versuche</div>
-      <div class="number">${attempts}</div>
-    </div>
-    <div class="stat-box" style="background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-      <div class="label">Genauigkeit</div>
-      <div class="number">${accuracy}%</div>
-    </div>
-  `;
-  
-  $("personalStats").innerHTML = html;
-  
-  let historyHtml = answerHistory.map(h => `
-    <div class="history-item ${h.correct ? 'correct' : 'incorrect'}">
-      <div>
-        <div class="history-question">${h.question}</div>
-        <div class="small">${h.answer || 'N/A'}</div>
-        <div class="small">${h.timestamp}</div>
-      </div>
-      <div class="history-status ${h.correct ? 'correct' : 'incorrect'}">
-        ${h.correct ? '✔ Richtig' : '❌ Falsch'}
-      </div>
-    </div>
-  `).join("");
-  
-  $("answerHistory").innerHTML = historyHtml || "<p>Noch keine Einträge</p>";
-  
-  $("app").classList.add("hidden");
+  let html=`<div class="stats">`;
+  html+=`<div class="stat-box"><div class="label">Gesamt Punkte</div><div class="number">${score}</div></div>`;
+  html+=`<div class="stat-box"><div class="label">Richtige Antworten</div><div class="number">${correct}</div></div>`;
+  html+=`<div class="stat-box"><div class="label">Versuche</div><div class="number">${attempts}</div></div>`;
+  html+=`<div class="stat-box"><div class="label">Genauigkeit</div><div class="number">${attempts>0?(correct*100/attempts).toFixed(0):0}%</div></div>`;
+  html+=`</div>`;
+  $("personalStats").innerHTML=html;
+  let historyHtml=``;
+  answerHistory.forEach(h=>{
+    historyHtml+=`<div class="history-item ${h.correct?'correct':'incorrect'}">
+      <span class="history-question">${h.question}</span>
+      <span class="history-status ${h.correct?'correct':'incorrect'}">${h.correct?'✓ Richtig':'✗ Falsch'}</span>
+    </div>`;
+  });
+  $("answerHistory").innerHTML=historyHtml||"<p>Noch keine Antworten</p>";
   $("statsSection").classList.remove("hidden");
+  $("app").classList.add("hidden");
 }
 
 function closeStats(){
@@ -1113,59 +1110,35 @@ function closeStats(){
 }
 
 function showLeaderboard(){
-  loadAllStats();
+  let globalBoard=JSON.parse(localStorage.getItem("A1_LEADERBOARD")||"[]");
+  let courseBoard=globalBoard.filter(e=>e.course===course);
   
-  let allStudents = getAllStudents();
-  let globalTop = allStudents.sort((a,b) => b.score - a.score).slice(0, 10);
-  let courseStudents = allStudents.filter(s => s.course === course).sort((a,b) => b.score - a.score).slice(0, 10);
-  
-  let globalHtml = globalTop.map((s, idx) => `
-    <div class="leaderboard-entry">
-      <div class="leaderboard-rank">${idx+1}</div>
-      <div class="leaderboard-info">
-        <div class="leaderboard-name">${s.student}${s===globalTop[0]? ' 👑' : ''}</div>
-        <div class="leaderboard-course">${s.course}${s.country ? ' · ' + s.country : ''}</div>
-      </div>
-      <div class="leaderboard-score">${s.score} ⭐</div>
+  $("global").innerHTML=globalBoard.slice(0,10).map((e,i)=>`<div class="leaderboard-entry">
+    <span class="leaderboard-rank">${i+1}</span>
+    <div class="leaderboard-info">
+      <div class="leaderboard-name">${e.name}</div>
+      <div class="leaderboard-course">${e.course}</div>
     </div>
-  `).join("");
+    <div class="leaderboard-score">${e.score} Pts</div>
+  </div>`).join("");
   
-  let courseHtml = courseStudents.length > 0 ? courseStudents.map((s, idx) => `
-    <div class="leaderboard-entry">
-      <div class="leaderboard-rank">${idx+1}</div>
-      <div class="leaderboard-info">
-        <div class="leaderboard-name">${s.student}${s===courseStudents[0]? ' 👑' : ''}</div>
-        <div class="leaderboard-course">${s.course}${s.country ? ' · ' + s.country : ''}</div>
-      </div>
-      <div class="leaderboard-score">${s.score} ⭐</div>
+  $("course").innerHTML=courseBoard.slice(0,10).map((e,i)=>`<div class="leaderboard-entry">
+    <span class="leaderboard-rank">${i+1}</span>
+    <div class="leaderboard-info">
+      <div class="leaderboard-name">${e.name}</div>
     </div>
-  `).join("") : "<p>Noch keine Einträge für deinen Kurs</p>";
+    <div class="leaderboard-score">${e.score} Pts</div>
+  </div>`).join("");
   
-  let progressHtml = `<table><tr><th>Name</th><th>Kurs</th>`;
-  EXERCISES.forEach(ex => {
-    progressHtml += `<th>${EXERCISE_NAMES[ex]}</th>`;
+  let progressHtml=`<table><tr><th>Name</th><th>Learn</th><th>QA</th><th>Quickfire</th></tr>`;
+  courseBoard.forEach(e=>{
+    progressHtml+=`<tr><td>${e.name}</td><td>${e.learn||0}%</td><td>${e.qa||0}%</td><td>${e.quickfire||0}%</td></tr>`;
   });
-  progressHtml += `<th>Gesamt</th></tr>`;
+  progressHtml+=`</table>`;
+  $("progress").innerHTML=progressHtml;
   
-  allStudents.forEach(s => {
-    let totalProgress = 0;
-    progressHtml += `<tr><td>${s.student}</td><td>${s.course}</td>`;
-    EXERCISES.forEach(ex => {
-      let prog = s.exerciseProgress && s.exerciseProgress[ex] ? s.exerciseProgress[ex] : 0;
-      totalProgress += prog;
-      let color = prog >= 90 ? '#2ecc71' : prog >= 50 ? '#f39c12' : '#e74c3c';
-      progressHtml += `<td style="text-align:center; color:${color}; font-weight:bold;">${prog}%</td>`;
-    });
-    progressHtml += `<td style="font-weight:bold;">${Math.round(totalProgress/EXERCISES.length)}%</td></tr>`;
-  });
-  progressHtml += `</table>`;
-  
-  document.getElementById("global").innerHTML = globalHtml;
-  document.getElementById("course").innerHTML = courseHtml;
-  document.getElementById("progress").innerHTML = progressHtml;
-  
-  $("app").classList.add("hidden");
   $("leaderboardSection").classList.remove("hidden");
+  $("app").classList.add("hidden");
 }
 
 function closeLeaderboard(){
@@ -1174,83 +1147,63 @@ function closeLeaderboard(){
 }
 
 function switchTab(tab){
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
   event.target.classList.add("active");
-  document.getElementById(tab).classList.add("active");
-}
-
-function getAllStudents(){
-  let students = [];
-  for(let i=0; i<localStorage.length; i++){
-    let key = localStorage.key(i);
-    if(key.startsWith("A1_")){
-      try {
-        let data = JSON.parse(localStorage.getItem(key));
-        students.push(data);
-      } catch(e){}
-    }
-  }
-  return students;
-}
-
-function loadAllStats(){
-  dashboard = getAllStudents();
+  $(tab).classList.add("active");
 }
 
 function exportMe(){
-  let data=JSON.parse(localStorage.getItem(key())||"{}");
-  let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  let a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download=`Fortschritt_${student}_${course}_${new Date().toISOString().split('T')[0]}.json`;a.click();
+  let entry={name:student,course:course,score:score,attempts:attempts,correct:correct,date:new Date().toLocaleString()};
+  Object.assign(entry,exerciseProgress);
+  let leaderboard=JSON.parse(localStorage.getItem("A1_LEADERBOARD")||"[]");
+  leaderboard.push(entry);
+  localStorage.setItem("A1_LEADERBOARD",JSON.stringify(leaderboard));
+  
+  let data=JSON.stringify({student,course,score,attempts,correct,answerHistory,exerciseProgress},null,2);
+  let blob=new Blob([data],{type:"application/json"});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement("a");
+  a.href=url;
+  a.download=student+"_"+course+".json";
+  a.click();
 }
 
 function importFiles(e){
-  dashboard=[];
-  [...e.target.files].forEach(f=>{
-    let reader=new FileReader();
-    reader.onload=ev=>{try{dashboard.push(JSON.parse(ev.target.result));drawDash()}catch(err){}};
-    reader.readAsText(f);
-  });
-}
-
-function drawDash(){
-  let rows=dashboard.map(d=>`
-    <tr>
-      <td>${d.student||""}</td>
-      <td>${d.course||""}</td>
-      <td>${d.country||""}</td>
-      <td>${d.score||0}</td>
-      <td>${d.correct||0}/${d.attempts||0}</td>
-      <td>${d.attempts>0?(d.correct*100/d.attempts).toFixed(0):'0'}%</td>
-      <td>${d.date||""}</td>
-    </tr>
-  `).join("");
+  let files=e.target.files;
+  let allData=[];
+  let processed=0;
   
-  $("dashTable").innerHTML=`
-    <table>
-      <tr>
-        <th>Name</th>
-        <th>Kurs</th>
-        <th>Herkunft</th>
-        <th>Punkte</th>
-        <th>Richtig/Versuche</th>
-        <th>Genauigkeit</th>
-        <th>Datum</th>
-      </tr>
-      ${rows}
-    </table>
-  `;
+  for(let f of files){
+    let reader=new FileReader();
+    reader.onload=ev=>{
+      let data=JSON.parse(ev.target.result);
+      allData.push(data);
+      processed++;
+      if(processed===files.length){
+        let csv="Name,Kurs,Punkte,Richtig,Versuche,Genauigkeit\n";
+        allData.forEach(d=>{
+          csv+=`${d.student},${d.course},${d.score},${d.correct},${d.attempts},${d.attempts>0?(d.correct*100/d.attempts).toFixed(0):0}\n`;
+        });
+        $("dashTable").innerHTML=`<textarea style="width:100%;height:300px;">${csv}</textarea>`;
+      }
+    };
+    reader.readAsText(f);
+  }
 }
 
 function downloadCSV(){
-  let csv="Name;Kurs;Herkunft;Punkte;Richtig;Versuche;Genauigkeit;Datum\n"+dashboard.map(d=>{
-    let acc = d.attempts>0?(d.correct*100/d.attempts).toFixed(0):'0';
-    return `${d.student};${d.course};${d.country||''};${d.score};${d.correct};${d.attempts};${acc}%;${d.date}`
-  }).join("\n");
-  let blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-  let a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download=`A1_Fortschritt_${new Date().toISOString().split('T')[0]}.csv`;a.click();
+  let csv="Name,Kurs,Punkte,Richtig,Versuche,Genauigkeit\n";
+  let leaderboard=JSON.parse(localStorage.getItem("A1_LEADERBOARD")||"[]");
+  leaderboard.forEach(e=>{
+    csv+=`${e.name},${e.course},${e.score},${e.correct},${e.attempts},${e.attempts>0?(e.correct*100/e.attempts).toFixed(0):0}\n`;
+  });
+  let blob=new Blob([csv],{type:"text/csv"});
+  let url=URL.createObjectURL(blob);
+  let a=document.createElement("a");
+  a.href=url;
+  a.download="A1_Ergebnisse.csv";
+  a.click();
 }
 </script>
 </body>
