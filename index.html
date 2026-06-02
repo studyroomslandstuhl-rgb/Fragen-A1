@@ -107,7 +107,7 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 <div class="stats" id="statsBox"></div>
 <div class="card">
 <h2>Aufgaben</h2>
-<p class="small">Alle Aufgaben sind offen. Die Prüfung ist aktuell zum Testen offen.</p>
+<p class="small">Alle Aufgaben sind offen. Die Prüfung ist erst am Ende freigeschaltet.</p>
 <div id="exerciseTracker" class="exercise-tracker"></div>
 </div>
 <div class="flex">
@@ -125,9 +125,18 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 
 <section id="dashboard" class="hidden card">
 <h2>📊 Lehrer-Dashboard</h2>
+<p class="small">Geben Sie Kursnummer und Passwort ein. Passwort: <strong>Ergebnisse</strong></p>
+<label>Kursnummer / Kurscode</label>
+<input id="teacherCourse" placeholder="z.B. A1-Montag">
+<label>Passwort</label>
+<input id="teacherPass" type="password" placeholder="Passwort">
+<button onclick="openTeacherStats()">🔐 Statistik anzeigen</button>
+<button class="secondary" onclick="back()">Zurück</button>
+<div id="teacherStatsBox"></div>
+<hr style="margin:20px 0">
+<p class="small">Optional: Fortschrittsdateien von TN importieren.</p>
 <input type="file" id="importFile" multiple accept=".json" onchange="importFiles(event)">
 <button onclick="downloadCSV()">📥 CSV exportieren</button>
-<button class="secondary" onclick="back()">Zurück</button>
 <div id="dashTable"></div>
 </section>
 </main>
@@ -169,6 +178,10 @@ const DATA = [
 
 const EXERCISES = ["learn","qa","speak","puzzle","dictation","memory","quickfire","listen","listenrespond","exam"];
 const EXERCISE_NAMES = {learn:"📚 Lernen",qa:"🗣️ Fragen beantworten",speak:"🎤 Sprechen",puzzle:"🧩 Puzzle",dictation:"✍️ Diktat",memory:"🃏 Memory",quickfire:"⚡ Blitzfeuer",listen:"🎧 Hören",listenrespond:"🎤 Hören & Antworten",exam:"🏆 Prüfung"};
+
+function trainingExercises(){return EXERCISES.filter(ex=>ex!=="exam");}
+function allTrainingComplete(){return trainingExercises().every(ex => (exerciseProgress[ex]||0) >= 90);}
+
 
 let student="",course="",game="learn",i=0,score=0,attempts=0,correct=0;
 let studentPerson={...DEFAULT_PROFILE}, answerHistory=[], exerciseProgress={}, questionOrder=DATA.map((_,idx)=>idx);
@@ -234,7 +247,17 @@ function logout(){if(confirm("Abmelden? Der gespeicherte Nutzer bleibt erhalten.
 function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
 function back(){location.reload()}
 
-function saveLocal(){if(student&&course)localStorage.setItem(key(),JSON.stringify({student,course,score,attempts,correct,i,game,questionOrder,studentPerson,answerHistory,exerciseProgress,date:new Date().toLocaleString()}));}
+function saveLocal(){
+  if(student&&course){
+    const data={student,course,score,attempts,correct,i,game,questionOrder,studentPerson,answerHistory,exerciseProgress,date:new Date().toLocaleString()};
+    localStorage.setItem(key(),JSON.stringify(data));
+    const regKey="A1_STUDENTS_"+course;
+    let list=JSON.parse(localStorage.getItem(regKey)||"[]");
+    list=list.filter(x=>x.student!==student);
+    list.push({student,course,score,attempts,correct,accuracy:attempts?Math.round(correct*100/attempts):0,exerciseProgress,date:data.date});
+    localStorage.setItem(regKey,JSON.stringify(list));
+  }
+}
 function loadLocal(){let raw=localStorage.getItem(key()); if(raw){let x=JSON.parse(raw); score=x.score||0;attempts=x.attempts||0;correct=x.correct||0;i=x.i||0;game=x.game||game;questionOrder=x.questionOrder||questionOrder;answerHistory=x.answerHistory||[];exerciseProgress=x.exerciseProgress||{};studentPerson=x.studentPerson||studentPerson;}}
 function restoreSession(){
   initLogin();
@@ -246,13 +269,29 @@ function updateAll(){stats();updateStatsBox();updateExerciseTracker();saveLocal(
 function stats(){$("statsLine").innerHTML=`⭐ Punkte: <b>${score}</b> · ✅ Richtig: <b>${correct}/${attempts}</b> (${attempts?Math.round(correct*100/attempts):0}%)`}
 function updateStatsBox(){$("statsBox").innerHTML=`<div class="stat"><div>Punkte</div><div class="num">${score}</div></div><div class="stat"><div>Richtig</div><div class="num">${correct}/${attempts}</div></div><div class="stat"><div>Genauigkeit</div><div class="num">${attempts?Math.round(correct*100/attempts):0}%</div></div><div class="stat"><div>Modus</div><div class="num">${EXERCISE_NAMES[game].split(" ")[0]}</div></div>`}
 function updateExerciseTracker(){
-  $("exerciseTracker").innerHTML=EXERCISES.map(ex=>`<div class="exercise-item ${ex===game?'active':''} ${(exerciseProgress[ex]||0)>=90?'completed':''} ${ex==='exam'?'exam':''}" onclick="mode('${ex}')"><div>${EXERCISE_NAMES[ex]}</div><div class="small">${exerciseProgress[ex]||0}%</div></div>`).join("");
+  $("exerciseTracker").innerHTML=EXERCISES.map(ex=>{
+    let locked = ex==="exam" && !allTrainingComplete();
+    let progress = exerciseProgress[ex]||0;
+    let label = locked ? "🔒 gesperrt" : progress + "%";
+    return `<div class="exercise-item ${ex===game?'active':''} ${progress>=90?'completed':''} ${ex==='exam'?'exam':''}" onclick="${locked ? "alert('Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.')" : "mode('"+ex+"')"}"><div>${EXERCISE_NAMES[ex]}</div><div class="small">${label}</div></div>`;
+  }).join("");
 }
-function mode(m){game=m;i=0;helpWrongTries=0;responseTries=0;questionOrder=m==="learn"?DATA.map((_,idx)=>idx):shuffle(DATA.map((_,idx)=>idx)); if(m==="memory")setupMemory(); if(m==="exam")startExam(); saveLocal(); updateAll(); render(); setTimeout(()=>$("game").scrollIntoView({behavior:"smooth",block:"start"}),50)}
-
-function fillTemplate(t,p=studentPerson){
- let first=p.fname||DEFAULT_PROFILE.fname,last=p.lname||DEFAULT_PROFILE.lname,full=p.full||`${first} ${last}`;
- return t.replaceAll("{name}",full).replaceAll("{fname}",first).replaceAll("{lname}",last).replaceAll("{origin}",p.origin||DEFAULT_PROFILE.origin).replaceAll("{lang}",p.lang||DEFAULT_PROFILE.lang).replaceAll("{city}",p.city||DEFAULT_PROFILE.city).replaceAll("{birthplace}",p.birthplace||"").replaceAll("{age}",p.age||"").replaceAll("{spell_fname}",first.toUpperCase().split("").join("-")).replaceAll("{spell_lname}",last.toUpperCase().split("").join("-")).replaceAll("{spell_fname_space}",first.toLowerCase().split("").join(" ")).replaceAll("{spell_lname_space}",last.toLowerCase().split("").join(" ")).replaceAll("{children_answer}",childrenAnswer(p)).replaceAll("{marital_answer}",maritalAnswer(p));
+function mode(m){
+  if(m==="exam" && !allTrainingComplete()){
+    alert("Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.");
+    return;
+  }
+  game=m;
+  i=0;
+  helpWrongTries=0;
+  responseTries=0;
+  questionOrder=m==="learn"?DATA.map((_,idx)=>idx):shuffle(DATA.map((_,idx)=>idx));
+  if(m==="memory")setupMemory();
+  if(m==="exam")startExam();
+  saveLocal();
+  updateAll();
+  render();
+  setTimeout(()=>$("game").scrollIntoView({behavior:"smooth",block:"start"}),50);
 }
 function normalizeGermanNumber(t){return (t||"").replace(/\beins\b/g,"1").replace(/\bein\b/g,"1").replace(/\bzwei\b/g,"2").replace(/\bdrei\b/g,"3").replace(/\bvier\b/g,"4").replace(/\bfünf\b/g,"5").replace(/\bfuenf\b/g,"5").replace(/\bsechs\b/g,"6").replace(/\bsieben\b/g,"7").replace(/\bacht\b/g,"8").replace(/\bneun\b/g,"9").replace(/\bzehn\b/g,"10")}
 function clean(t){return normalizeGermanNumber(String(t||"").toLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ß/g,"ss").replace(/[.,!?;:]/g,"").replace(/\s+/g," ").trim()}
@@ -372,6 +411,72 @@ function examQuestionHint(){let t=item().topic;if(t==="Geburtsort")return "Frage
 function markExam(good,u=""){attempts++;examAttempts++;answerHistory.push({question:item().topic,correct:good,answer:u,acceptedAnswers:questionVariants(),exam:true,timestamp:new Date().toLocaleTimeString()});if(good){correct++;examCorrect++;score+=10;$("feedback").innerHTML="<div class='ok'>✔ Richtig!</div>"}else{$("feedback").innerHTML=`<div class='no'>❌ Nicht richtig.</div><div class='small'>Akzeptiert: ${questionVariants().join(" · ")}</div>`}$("nextExamBtn").classList.remove("hidden");updateExamTimer();saveLocal();updateAll()}
 function nextExam(){if(i>=DATA.length-1)finishExam();else{i++;render()}}
 function finishExam(){if(examTimer)clearInterval(examTimer);let res={name:student,course,score:examScore(),time:formatTime(Date.now()-examStartTime),accuracy:examAttempts?Math.round(examCorrect*100/examAttempts):0,date:new Date().toLocaleString()};let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");b.push(res);b.sort((a,b)=>b.score-a.score);localStorage.setItem("A1_EXAM_RESULTS",JSON.stringify(b));exerciseProgress.exam=100;updateAll();$("game").innerHTML=`<h2>🏆 Prüfung abgeschlossen</h2><div class='ok'>Ergebnis veröffentlicht.</div><p>Zeit: ${res.time}<br>Genauigkeit: ${res.accuracy}%<br>Wert: ${res.score}</p><button onclick='showLeaderboard()'>Bestenliste</button>`}
+
+
+function openTeacherStats(){
+  const c = ($("teacherCourse").value||"").trim();
+  const p = ($("teacherPass").value||"").trim();
+  if(!c){alert("Bitte Kursnummer eingeben."); return;}
+  if(p !== "Ergebnisse"){alert("Falsches Passwort."); return;}
+
+  let students = JSON.parse(localStorage.getItem("A1_STUDENTS_"+c)||"[]");
+  let exams = JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]").filter(e=>e.course===c);
+
+  // Auch direkte A1_ Speicher durchsuchen, falls ältere Daten noch nicht im Register sind.
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith("A1_"+c+"_")){
+      try{
+        let d=JSON.parse(localStorage.getItem(k));
+        if(d && d.student && !students.some(s=>s.student===d.student)){
+          students.push({
+            student:d.student,
+            course:d.course,
+            score:d.score||0,
+            attempts:d.attempts||0,
+            correct:d.correct||0,
+            accuracy:d.attempts?Math.round((d.correct||0)*100/d.attempts):0,
+            exerciseProgress:d.exerciseProgress||{},
+            date:d.date||""
+          });
+        }
+      }catch(e){}
+    }
+  });
+
+  let exNames = trainingExercises();
+  let html = `<h3>Statistik für Kurs: ${escapeHtml(c)}</h3>`;
+  if(!students.length){
+    html += `<div class="no">Noch keine lokalen Daten für diesen Kurs auf diesem Gerät.</div>`;
+  }else{
+    html += `<table><tr><th>TN</th><th>Punkte</th><th>Richtig</th><th>Versuche</th><th>Genauigkeit</th><th>Erledigt</th><th>Letzte Aktivität</th></tr>`;
+    students.sort((a,b)=>(b.score||0)-(a.score||0)).forEach(s=>{
+      let done = exNames.filter(ex => ((s.exerciseProgress||{})[ex]||0) >= 90).length;
+      html += `<tr>
+        <td>${escapeHtml(s.student)}</td>
+        <td>${s.score||0}</td>
+        <td>${s.correct||0}</td>
+        <td>${s.attempts||0}</td>
+        <td>${s.accuracy||0}%</td>
+        <td>${done}/${exNames.length}</td>
+        <td>${escapeHtml(s.date||"")}</td>
+      </tr>`;
+    });
+    html += `</table>`;
+  }
+
+  html += `<h3>Prüfungsergebnisse</h3>`;
+  if(!exams.length){
+    html += `<p>Noch keine Prüfungsergebnisse für diesen Kurs.</p>`;
+  }else{
+    html += `<table><tr><th>TN</th><th>Wert</th><th>Zeit</th><th>Genauigkeit</th><th>Datum</th></tr>`;
+    exams.sort((a,b)=>(b.score||0)-(a.score||0)).forEach(e=>{
+      html += `<tr><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${e.time}</td><td>${e.accuracy}%</td><td>${escapeHtml(e.date||"")}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+
+  $("teacherStatsBox").innerHTML = html;
+}
 
 function showLeaderboard(){let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");$("leaderboard").innerHTML=b.length?b.map((e,i)=>`<div class="leader"><b>${i+1}. ${escapeHtml(e.name)}</b> · ${escapeHtml(e.course)}<br>Wert: ${e.score} · Zeit: ${e.time} · Genauigkeit: ${e.accuracy}%</div>`).join(""):"Noch keine Ergebnisse.";$("app").classList.add("hidden");$("leaderboardSection").classList.remove("hidden")}
 function closeLeaderboard(){$("leaderboardSection").classList.add("hidden");$("app").classList.remove("hidden")}
