@@ -784,6 +784,15 @@ function questionVariants(x=item()){
  return [...new Set(q)];
 }
 
+function okQuestion(user,x=item()){
+  let u=clean(user);
+  return questionVariants(x).some(q=>{
+    let a=clean(q);
+    return u===a || (u.length>5&&a.includes(u)) || (a.length>5&&u.includes(a));
+  });
+}
+
+
 function compactName(t){
   return clean(t).replace(/\s+/g,"").replace(/-/g,"");
 }
@@ -1287,7 +1296,7 @@ function render(){
  if(game==="quickfire"){html+=`<div class="big">${q}</div><p>⚡ Wähle die richtige Antwort.</p>${getWrongQuickAnswers().map(a=>`<button type="button" class="option quiz-option" data-answer="${escapeHtml(a)}" onclick="quickfireClick(this)">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
  if(game==="listen"){html+=`<p>🎧 Höre die Frage. Die Frage wird nicht angezeigt.</p><button onclick="playCurrentQuestionHidden()">🔊 Frage abspielen</button><button id="slowListenBtn" class="secondary hidden" onclick="playCurrentQuestionSlow()">🐢 Langsamer hören</button><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div>${getCrossTopicAnswers().map(a=>`<button class="option" onclick="mark(ok(this.dataset.answer),this.dataset.answer)" data-answer="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
  if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="playCurrentQuestionHidden()">🔊 Frage abspielen</button><button id="slowListenBtn" class="secondary hidden" onclick="playCurrentQuestionSlow()">🐢 Langsamer hören</button><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Hier tippen, falls Mikrofon nicht funktioniert..."><button id="checkBtn" onclick="safeCheckTypedRespond()">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
- if(game==="exam"){html+=`<div id="examTimer" class="small"></div><p>Bilde die passende Frage zu diesem Begriff:</p><div class="big">🔎 ${x.topic}</div><input id="ans" placeholder="Passende Frage schreiben..."><button onclick="markExam(okQuestion($('ans').value),$('ans').value)">Überprüfen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenExamQuestion()">🎤 Frage sprechen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small><strong>Hilfe:</strong> '+examQuestionHint()+'</div>'">Hilfe</button><button class="success hidden" id="nextExamBtn" onclick="nextExam()">⏭️ Nächste Prüfungsaufgabe</button><p id="heard"></p><div id="feedback"></div>`; setTimeout(updateExamTimer,0)}
+ if(game==="exam"){html+=`<div id="examTimer" class="small"></div><p>Bilde die passende Frage zu diesem Begriff:</p><div class="big">🔎 ${x.topic}</div><input id="ans" placeholder="Passende Frage schreiben..."><button onclick="markExam(okQuestion($('ans').value),$('ans').value)">Überprüfen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenExamQuestion()">🎤 Frage sprechen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small><strong>Tipp:</strong> '+examQuestionHint()+'</div>'">Hilfe</button><button class="success hidden" id="nextExamBtn" onclick="nextExam()">⏭️ Nächste Prüfungsaufgabe</button><p id="heard"></p><div id="feedback"></div>`; setTimeout(updateExamTimer,0)}
  $("game").innerHTML=html; if(game==="memory")renderMemoryGrid(); stats(); updateStatsBox();
  }catch(e){
   console.error(e);
@@ -1379,6 +1388,77 @@ function loadCourseRankingJsonp(courseCode){
 function closeCourseRanking(){
   $("courseRankingSection").classList.add("hidden");
   $("app").classList.remove("hidden");
+}
+
+
+function formatTime(ms){
+  let s=Math.floor(ms/1000),m=Math.floor(s/60);
+  return m+":"+String(s%60).padStart(2,"0");
+}
+function startExam(){
+  examStartTime=Date.now();
+  examCorrect=0;
+  examAttempts=0;
+  examFinished=false;
+  if(examTimer) clearInterval(examTimer);
+  examTimer=setInterval(updateExamTimer,1000);
+}
+function examScore(){
+  let acc=examAttempts?examCorrect/examAttempts:0;
+  let elapsed=examStartTime?Math.floor((Date.now()-examStartTime)/1000):0;
+  return Math.max(0,Math.round(acc*1000-elapsed));
+}
+function updateExamTimer(){
+  let e=$("examTimer");
+  if(e&&examStartTime)e.innerHTML=`⏱️ Zeit: <b>${formatTime(Date.now()-examStartTime)}</b> · 🎯 Genauigkeit: <b>${examAttempts?Math.round(examCorrect*100/examAttempts):0}%</b> · Wert: <b>${examScore()}</b>`;
+}
+function examQuestionHint(){
+  let t=item().topic;
+  if(t==="Geburtsort")return "Frage nach dem Geburtsort, z. B. mit „Wo ... geboren?“";
+  if(t==="Alter")return "Frage nach dem Alter.";
+  if(t==="Wohnort")return "Frage nach dem Wohnort.";
+  if(t==="Heimatland")return "Frage nach der Herkunft.";
+  if(t==="Vorname")return "Frage nach dem Vornamen.";
+  if(t==="Nachname")return "Frage nach dem Nachnamen.";
+  return "Bilde die passende Frage.";
+}
+function markExam(good,u=""){
+  attempts++;
+  examAttempts++;
+  answerHistory.push({question:item().topic,correct:good,answer:u,acceptedAnswers:questionVariants(),exam:true,timestamp:new Date().toLocaleTimeString()});
+  if(good){
+    correct++;
+    examCorrect++;
+    score+=10;
+    $("feedback").innerHTML="<div class='ok'>✔ Richtig!</div>";
+  }else{
+    $("feedback").innerHTML=`<div class='no'>❌ Nicht richtig.</div><div class='small'>Akzeptiert: ${questionVariants().join(" · ")}</div>`;
+  }
+  const n=$("nextExamBtn");
+  if(n) n.classList.remove("hidden");
+  updateExamTimer();
+  saveLocal();
+  updateAll();
+}
+function nextExam(){
+  if(i>=DATA.length-1) finishExam();
+  else{
+    i++;
+    if(typeof resetListenCounter==="function") resetListenCounter();
+    render();
+  }
+}
+function finishExam(){
+  if(examTimer) clearInterval(examTimer);
+  let res={name:student,course,score:examScore(),time:formatTime(Date.now()-examStartTime),accuracy:examAttempts?Math.round(examCorrect*100/examAttempts):0,date:new Date().toLocaleString()};
+  let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");
+  b.push(res);
+  b.sort((a,b)=>b.score-a.score);
+  localStorage.setItem("A1_EXAM_RESULTS",JSON.stringify(b));
+  exerciseProgress.exam=100;
+  if(typeof sendExamResultToGoogleSheet==="function") sendExamResultToGoogleSheet(res);
+  updateAll();
+  $("game").innerHTML=`<h2>🏆 Prüfung abgeschlossen</h2><div class='ok'>Ergebnis gespeichert.</div><p>Zeit: ${res.time}<br>Genauigkeit: ${res.accuracy}%<br>Wert: ${res.score}</p><button onclick='showLeaderboard()'>Bestenliste</button>`;
 }
 
 function showLeaderboard(){let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");$("leaderboard").innerHTML=b.length?b.map((e,i)=>`<div class="leader"><b>${i+1}. ${escapeHtml(e.name)}</b> · ${escapeHtml(e.course)}<br>Wert: ${e.score} · Zeit: ${e.time} · Genauigkeit: ${e.accuracy}%</div>`).join(""):"Noch keine Ergebnisse.";$("app").classList.add("hidden");$("courseRankingSection").classList.add("hidden");$("leaderboardSection").classList.remove("hidden")}
