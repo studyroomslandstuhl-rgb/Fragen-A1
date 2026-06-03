@@ -292,6 +292,19 @@ if(!String.prototype.replaceAll){
 }
 
 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxqlwbjbdFSQuXWz2en2cNxGk7ldTJIITdksJvhzJ8Yu-JDzrfvqfXcD0Yj5-fzu36__w/exec";
+
+// Safety aliases: prevent ReferenceError from accidental inline calls like mode(exam)
+const learn = "learn";
+const qa = "qa";
+const speak = "speak";
+const puzzle = "puzzle";
+const dictation = "dictation";
+const memory = "memory";
+const quickfire = "quickfire";
+const listen = "listen";
+const listenrespond = "listenrespond";
+const exam = "exam";
+
 const COUNTRIES = {
   "Deutschland": "Deutsch", "Syrien": "Arabisch", "Ukraine": "Ukrainisch", "Afghanistan": "Dari",
   "Irak": "Arabisch", "Türkei": "Türkisch", "Polen": "Polnisch", "Rumänien": "Rumänisch",
@@ -614,7 +627,7 @@ function updateExerciseTracker(){
     let locked = ex==="exam" && !allTrainingComplete();
     let progress = Math.max(0, Math.min(100, Number((exerciseProgress||{})[ex]) || 0));
     let label = locked ? "🔒 gesperrt" : String(progress) + "%";
-    return `<button type="button" class="exercise-item ${ex===game?'active':''} ${progress>=90?'completed':''} ${ex==='exam'?'exam':''}" data-exercise="${ex}" ${locked ? "disabled" : ""}>
+    return `<button type="button" class="exercise-item ${ex===game?'active':''} ${progress>=90?'completed':''} ${ex==='exam'?'exam':''}" data-exercise="${ex}" data-locked="${locked}">
       <div>${EXERCISE_NAMES[ex]}</div>
       <div class="small">${label}</div>
     </button>`;
@@ -622,16 +635,18 @@ function updateExerciseTracker(){
 
   document.querySelectorAll("[data-exercise]").forEach(btn => {
     btn.onclick = () => {
-      const ex = btn.dataset.exercise;
-      if(ex==="exam" && !allTrainingComplete()){
+      const target = String(btn.dataset.exercise || "learn");
+      if(btn.dataset.locked === "true"){
         alert("Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.");
         return;
       }
-      mode(ex);
+      mode(target);
     };
   });
 }
 function mode(m){
+  m = String(m || "learn");
+  if(!EXERCISES.includes(m)) m = "learn";
   if(m==="exam" && !allTrainingComplete()){
     alert("Die Prüfung wird erst freigeschaltet, wenn alle Aufgaben erledigt sind.");
     return;
@@ -640,7 +655,7 @@ function mode(m){
   i=0;
   helpWrongTries=0;
   responseTries=0;
-  resetListenCounter();
+  if(typeof resetListenCounter==="function") resetListenCounter();
   questionOrder=m==="learn"?DATA.map((_,idx)=>idx):shuffle(DATA.map((_,idx)=>idx));
   sanitizeState();
   if(m==="memory")setupMemory();
