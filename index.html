@@ -414,7 +414,7 @@ function resetEverything(){
 
 function start(){
   if(!validateLogin())return;
-  studentPerson=buildStudentPerson(); cleanProfile(); student=studentPerson.full; course=$("course").value.trim();
+  studentPerson=buildStudentPerson(); if(typeof cleanProfile==='function') cleanProfile(); student=studentPerson.full; course=$("course").value.trim();
   loadLocal(); saveProfileToStorage(); localStorage.setItem("A1_ACTIVE_SESSION",key());
   sendToGoogleSheet("login", true);
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
@@ -635,6 +635,49 @@ function countryFromPhrase(country){
   return articles[country] || country;
 }
 
+
+function titleCaseWord(w){
+  return String(w||"").trim().toLowerCase().replace(/(^|[\s,-])\p{L}/gu, m => m.toUpperCase());
+}
+
+function normalizeKnownName(name){
+  let n = titleCaseWord(name);
+  const map = {
+    "Mohamad":"Mohammad","Mohammed":"Mohammad","Mohamed":"Mohammad","Muhammed":"Mohammad",
+    "Achmed":"Ahmed","Ahmad":"Ahmed",
+    "Fatma":"Fatima",
+    "Kyiv":"Kiew","Kiev":"Kiew",
+    "Halab":"Aleppo"
+  };
+  return map[n] || n;
+}
+
+function normalizeLanguageList(txt){
+  let raw = String(txt||"").replace(/\bund\b/gi,",").replace(/;/g,",");
+  let parts = raw.split(",").map(x=>x.trim()).filter(Boolean);
+  const map = {
+    "deutsch":"Deutsch","englisch":"Englisch","russisch":"Russisch","ukrainisch":"Ukrainisch",
+    "arabisch":"Arabisch","türkisch":"Türkisch","tuerkisch":"Türkisch",
+    "polnisch":"Polnisch","rumänisch":"Rumänisch","rumaenisch":"Rumänisch",
+    "französisch":"Französisch","franzoesisch":"Französisch",
+    "spanisch":"Spanisch","italienisch":"Italienisch","persisch":"Persisch",
+    "dari":"Dari","urdu":"Urdu","hindi":"Hindi","somali":"Somali",
+    "tigrinya":"Tigrinya","chinesisch":"Chinesisch","japanisch":"Japanisch"
+  };
+  parts = parts.map(p => map[p.toLowerCase()] || titleCaseWord(p));
+  return [...new Set(parts)].join(", ");
+}
+
+function cleanProfile(){
+  if(!studentPerson || typeof studentPerson !== "object") studentPerson = {...DEFAULT_PROFILE};
+  studentPerson.fname = normalizeKnownName(studentPerson.fname || DEFAULT_PROFILE.fname);
+  studentPerson.lname = normalizeKnownName(studentPerson.lname || DEFAULT_PROFILE.lname);
+  studentPerson.full = (studentPerson.fname + " " + studentPerson.lname).trim();
+  studentPerson.lang = normalizeLanguageList(studentPerson.lang || DEFAULT_PROFILE.lang);
+  studentPerson.city = titleCaseWord(studentPerson.city || DEFAULT_PROFILE.city);
+  studentPerson.birthplace = normalizeKnownName(studentPerson.birthplace || "");
+}
+
 function fillTemplate(t, p=studentPerson){
   p = p || {};
   let first = p.fname || DEFAULT_PROFILE.fname || "";
@@ -670,6 +713,12 @@ function answerVariants(x=item(),p=studentPerson){
  if(x.topic.startsWith("Buchstabieren")){let n=x.topic.includes("Nachname")?p.lname:p.fname; variants.push(n,n.toUpperCase().split("").join(" "),n.toLowerCase().split("").join(" "),n.toLowerCase().split("").join("-"))}
  return [...new Set(variants.filter(Boolean))];
 }
+
+function getAnswer(x=item()){
+  const vars = answerVariants(x);
+  return vars && vars.length ? vars[0] : "";
+}
+
 function questionVariants(x=item()){
  let q=[x.qSie,x.qDu].filter(Boolean);
  if(x.topic==="Name")q.push("Wie ist Ihr Name?","Wie ist dein Name?");
@@ -825,6 +874,38 @@ function showTranscript(text){
 }
 function transcriptButton(textExpr){
   return `<button class="secondary" onclick="showTranscript(${textExpr})">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div>`;
+}
+
+
+function getCrossTopicAnswers(){
+  let correct = getAnswer();
+  let pool = [];
+  DATA.forEach(d=>{
+    if(d.topic !== item().topic){
+      answerVariants(d).forEach(a=>{
+        if(clean(a)!==clean(correct) && !pool.some(p=>clean(p)===clean(a))) pool.push(a);
+      });
+    }
+  });
+  return shuffle([correct, ...shuffle(pool).slice(0,3)]);
+}
+
+function getWrongQuickAnswers(){
+  let c = getAnswer(), x = item(), base = [];
+  if(x.topic==="Name"){
+    base=[`Ich heißt ${studentPerson.fname}.`,`Ich heißen ${studentPerson.fname}.`,`Ich heiße aus ${studentPerson.fname}.`];
+  }else if(x.topic==="Wohnort"){
+    base=[`Ich wohnen in ${studentPerson.city}.`,`Ich wohne ${studentPerson.city}.`,`Ich wohnt in ${studentPerson.city}.`];
+  }else if(x.topic==="Alter"){
+    base=[`Ich habe ${studentPerson.age} Jahre.`,`Ich bin ${studentPerson.age} alt Jahre.`,`Ich sind ${studentPerson.age} Jahre alt.`];
+  }else if(x.topic==="Heimatland"){
+    base=[`Ich komme ${studentPerson.origin}.`,`Ich komme von ${studentPerson.origin}.`,`Ich bin aus ${studentPerson.origin} kommen.`];
+  }else if(x.topic==="Sprache"){
+    base=[`Ich sprechen ${studentPerson.lang}.`,`Ich kann ${studentPerson.lang} Sprache.`,`Ich spreche ${studentPerson.lang} und Deutsch bisschen.`];
+  }else{
+    base=getCrossTopicAnswers().filter(a=>clean(a)!==clean(c));
+  }
+  return shuffle([c, ...base.filter(Boolean).slice(0,3)]);
 }
 
 function render(){
