@@ -58,6 +58,98 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
  .memory{grid-template-columns:repeat(4,1fr)!important;gap:5px!important}
  .memcard{min-height:64px!important;font-size:10px!important;padding:4px!important}
 }
+
+/* FIX: Menü/Prozess immer lesbar */
+.exercise-item,
+.exercise-item .small {
+  color: #333 !important;
+}
+.exercise-item.completed,
+.exercise-item.completed .small {
+  color: white !important;
+}
+.exercise-item.exam,
+.exercise-item.exam .small {
+  color: #333 !important;
+}
+.exercise-item[disabled],
+.exercise-item[disabled] .small {
+  color: #555 !important;
+}
+.help-box {
+  background:#f0f4ff;
+  border-left:5px solid #667eea;
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+}
+.answer-box {
+  background:#d9f7e8;
+  border-left:5px solid #27ae60;
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+  font-weight:700;
+}
+
+
+/* FINAL UX FIXES */
+.exercise-item,
+.exercise-item .small {
+  color:#333 !important;
+}
+.exercise-item.completed,
+.exercise-item.completed .small {
+  color:white !important;
+}
+.exercise-item.exam,
+.exercise-item.exam .small {
+  color:#333 !important;
+}
+.progress-overview {
+  background:#f7f8ff;
+  border:2px solid #dbe0ff;
+  border-radius:12px;
+  padding:12px;
+  margin:10px 0;
+}
+.profile-edit-box {
+  background:#fff3cd;
+  border-left:5px solid #ffc107;
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+}
+.mic-warning {
+  background:#fff3cd;
+  border-left:5px solid #ffc107;
+  padding:10px;
+  border-radius:10px;
+  margin:10px 0;
+}
+.help-box {
+  background:#f0f4ff;
+  border-left:5px solid #667eea;
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+}
+.answer-box {
+  background:#d9f7e8;
+  border-left:5px solid #27ae60;
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+  font-weight:700;
+}
+.rank-box {
+  background:#eefaf3;
+  border-left:5px solid #27ae60;
+  padding:12px;
+  border-radius:10px;
+  margin:10px 0;
+}
+
 </style>
 </head>
 <body>
@@ -144,19 +236,19 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 <div id="statsLine"></div>
 </div>
 <div>
-<button class="secondary" onclick="logout()">Abmelden</button>
+<button class="secondary" onclick="editProfile()">Profil bearbeiten</button><button class="secondary" onclick="logout()">Abmelden</button>
 <button class="danger reset-user" onclick="resetEverything()">🗑️ Von 0 anfangen</button>
 </div>
 </div>
-<div class="stats" id="statsBox"></div>
+<div class="stats" id="statsBox"></div><div id="progressDetails"></div>
 <div class="card">
 <h2>Aufgaben</h2>
 <p class="small">Alle Aufgaben sind offen. Die Prüfung ist erst am Ende freigeschaltet.</p>
 <div id="exerciseTracker" class="exercise-tracker"></div>
 </div>
 <div class="flex">
-<button onclick="showLeaderboard()">🏅 Bestenliste</button>
-<button onclick="exportMe()">📤 Export</button>
+<button onclick="showLeaderboard()">🏅 Bestenliste</button><button onclick="showCourseRanking()">👥 Kurs-Rangliste</button>
+<button onclick="exportMe()">📤 Export</button><button onclick="syncManual()">☁️ An Lehrerin senden</button>
 </div>
 <div id="game" class="card"></div>
 </section>
@@ -186,6 +278,7 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 </main>
 
 <script>
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxqlwbjbdFSQuXWz2en2cNxGk7ldTJIITdksJvhzJ8Yu-JDzrfvqfXcD0Yj5-fzu36__w/exec";
 const COUNTRIES = {
   "Deutschland": "Deutsch", "Syrien": "Arabisch", "Ukraine": "Ukrainisch", "Afghanistan": "Dari",
   "Irak": "Arabisch", "Türkei": "Türkisch", "Polen": "Polnisch", "Rumänien": "Rumänisch",
@@ -199,13 +292,13 @@ const DEFAULT_PROFILE = {fname:"Max",lname:"Mustermann",full:"Max Mustermann",or
 
 const DATA = [
  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",answerTemplates:["Ich heiße {fname}.","Ich heiße {name}.","Ich bin {fname}.","Ich bin {name}.","Mein Name ist {fname}.","Mein Name ist {name}."]},
- {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",answerTemplates:["Mein Vorname ist {fname}.","Ich heiße {fname}.","{fname}."]},
- {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
- {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",answerTemplates:["Ich komme aus {origin}.","Ich bin aus {origin}.","Aus {origin}."]},
+ {topic:"Vorname",qSie:"Wie heißen Sie mit Vornamen?",qDu:"Wie heißt du mit Vornamen?",answerTemplates:["Mein Vorname ist {fname}.","Ich heiße {fname}.","{fname}."]},
+ {topic:"Nachname",qSie:"Wie heißen Sie mit Nachnamen?",qDu:"Wie heißt du mit Nachnamen?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
+ {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",answerTemplates:["Ich komme aus {origin_from}.","Ich bin aus {origin_from}.","Aus {origin_from}."]},
  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",answerTemplates:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}.","{lang}.","{lang} und ein bisschen Deutsch."]},
  {topic:"Buchstabieren Vorname",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",answerTemplates:["{spell_fname}","{spell_fname_space}"]},
  {topic:"Buchstabieren Nachname",qSie:"Buchstabieren Sie bitte Ihren Nachnamen.",qDu:"Buchstabiere bitte deinen Nachnamen.",answerTemplates:["{spell_lname}","{spell_lname_space}"]},
- {topic:"Befinden",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:[
+ {topic:"Wie geht es Ihnen?",qSie:"Wie geht es Ihnen?",qDu:"Wie geht es dir?",answerTemplates:[
   "Es geht mir sehr gut.","Mir geht es sehr gut.","Sehr gut.","Sehr gut, danke.","Danke, sehr gut.",
   "Es geht mir gut.","Mir geht es gut.","Gut.","Gut, danke.","Danke, gut.","Danke, es geht mir gut.",
   "Super.","Es geht mir super.","Mir geht es super.","Prima.","Es geht mir prima.",
@@ -231,6 +324,7 @@ let student="",course="",game="learn",i=0,score=0,attempts=0,correct=0;
 let studentPerson={...DEFAULT_PROFILE}, answerHistory=[], exerciseProgress={}, questionOrder=DATA.map((_,idx)=>idx);
 let memoryCards=[], first=null, lock=false, helpWrongTries=0, responseTries=0;
 let currentQuestion="", currentAnswer="", examStartTime=null, examTimer=null, examCorrect=0, examAttempts=0, examFinished=false;
+let lastGoogleSend = 0;
 
 function $(id){return document.getElementById(id)}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -312,23 +406,119 @@ function renderSavedUserBox(){
 function continueSavedUser(){let p=getSavedProfile(); if(!p)return alert("Kein gespeicherter Nutzer."); fillLoginFromProfile(p); start();}
 function forgetSavedUser(){if(confirm("Gespeicherten Nutzer entfernen?")){localStorage.removeItem(profileStorageKey());localStorage.removeItem("A1_ACTIVE_SESSION");renderSavedUserBox();}}
 function resetEverything(){
-  if(!confirm("ACHTUNG: Wirklich von 0 anfangen? Das löscht Nutzer, Fortschritt und lokale Ergebnisse."))return;
-  if(prompt("Zur Sicherheit: Tippe RESET ein.")!=="RESET")return;
+  if(!confirm("Möchten Sie wirklich von 0 anfangen?")) return;
+  if(!confirm("Sind Sie ganz sicher? Alle lokalen Daten auf diesem Gerät werden gelöscht.")) return;
   Object.keys(localStorage).forEach(k=>{if(k.startsWith("A1_"))localStorage.removeItem(k)});
   location.reload();
 }
 
 function start(){
   if(!validateLogin())return;
-  studentPerson=buildStudentPerson(); student=studentPerson.full; course=$("course").value.trim();
+  studentPerson=buildStudentPerson(); cleanProfile(); student=studentPerson.full; course=$("course").value.trim();
   loadLocal(); saveProfileToStorage(); localStorage.setItem("A1_ACTIVE_SESSION",key());
+  sendToGoogleSheet("login", true);
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
   $("hello").innerText="Hallo, "+studentPerson.fname+"!";
   updateAll(); render();
 }
+
+function editProfile(){
+  $("app").classList.add("hidden");
+  $("login").classList.remove("hidden");
+  fillLoginFromProfile({...studentPerson, course});
+  const box = $("savedUserBox");
+  if(box){
+    box.classList.remove("hidden");
+    box.innerHTML = `<div class="profile-edit-box"><strong>Profil bearbeiten:</strong><br>Ändern Sie die Daten und klicken Sie wieder auf Starten. Die neuen Daten werden gespeichert.</div>`;
+  }
+}
+
 function logout(){if(confirm("Abmelden? Der gespeicherte Nutzer bleibt erhalten.")){localStorage.removeItem("A1_ACTIVE_SESSION");location.reload();}}
 function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
 function back(){location.reload()}
+
+
+function progressSummary(){
+  const parts = [];
+  if(typeof EXERCISE_NAMES !== "undefined"){
+    Object.keys(EXERCISE_NAMES).forEach(ex => {
+      parts.push(ex + ":" + ((exerciseProgress||{})[ex] || 0) + "%");
+    });
+  }
+  return parts.join(" | ");
+}
+
+function sendToGoogleSheet(exerciseName="progress", force=false){
+  if(!GOOGLE_SHEET_URL || !student || !course) return;
+
+  const now = Date.now();
+  if(!force && now - lastGoogleSend < 5000) return;
+  lastGoogleSend = now;
+
+  const payload = {
+    course: course || "",
+    student: student || "",
+    exercise: exerciseName || game || "",
+    score: score || 0,
+    correct: correct || 0,
+    attempts: attempts || 0,
+    accuracy: attempts ? Math.round((correct || 0) * 100 / attempts) : 0,
+    progress: progressSummary(),
+    examTime: "",
+    examScore: "",
+    game: game || "",
+    timestamp: new Date().toISOString(),
+    profile: studentPerson || {},
+    exerciseProgress: exerciseProgress || {}
+  };
+
+  try{
+    fetch(GOOGLE_SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify(payload)
+    }).catch(err => console.warn("Google Sheet send error:", err));
+  }catch(e){
+    console.warn("Google Sheet send failed:", e);
+  }
+}
+
+function sendExamResultToGoogleSheet(result){
+  if(!GOOGLE_SHEET_URL || !student || !course) return;
+  const payload = {
+    course: course || "",
+    student: student || "",
+    exercise: "Prüfung",
+    score: score || 0,
+    correct: correct || 0,
+    attempts: attempts || 0,
+    accuracy: result.accuracy || 0,
+    progress: progressSummary(),
+    examTime: result.time || "",
+    examScore: result.score || "",
+    game: "exam",
+    timestamp: new Date().toISOString(),
+    profile: studentPerson || {},
+    exerciseProgress: exerciseProgress || {},
+    examResult: result || {}
+  };
+  try{
+    fetch(GOOGLE_SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify(payload)
+    }).catch(err => console.warn("Google Sheet exam send error:", err));
+  }catch(e){
+    console.warn("Google Sheet exam send failed:", e);
+  }
+}
+
+function syncManual(){
+  sendToGoogleSheet("manuell", true);
+  alert("Daten wurden gesendet. Prüfe dein Google Sheet.");
+}
 
 function saveLocal(){
   if(student&&course){
@@ -340,6 +530,8 @@ function saveLocal(){
     list.push({student,course,score,attempts,correct,accuracy:attempts?Math.round(correct*100/attempts):0,exerciseProgress,date:data.date});
     localStorage.setItem(regKey,JSON.stringify(list));
   }
+
+  sendToGoogleSheet(game);
 }
 function loadLocal(){
   let raw=localStorage.getItem(key());
@@ -366,13 +558,26 @@ function loadLocal(){
 }
 
 function updateAll(){stats();updateStatsBox();updateExerciseTracker();saveLocal()}
-function stats(){$("statsLine").innerHTML=`⭐ Punkte: <b>${score}</b> · ✅ Richtig: <b>${correct}/${attempts}</b> (${attempts?Math.round(correct*100/attempts):0}%)`}
-function updateStatsBox(){$("statsBox").innerHTML=`<div class="stat"><div>Punkte</div><div class="num">${score}</div></div><div class="stat"><div>Richtig</div><div class="num">${correct}/${attempts}</div></div><div class="stat"><div>Genauigkeit</div><div class="num">${attempts?Math.round(correct*100/attempts):0}%</div></div><div class="stat"><div>Modus</div><div class="num">${EXERCISE_NAMES[game].split(" ")[0]}</div></div>`}
+
+function overallProgress(){
+  let list = EXERCISES.filter(ex=>ex!=="exam");
+  if(!list.length) return 0;
+  let sum = list.reduce((s,ex)=>s+(Number((exerciseProgress||{})[ex])||0),0);
+  return Math.round(sum/list.length);
+}
+function progressDetailsHtml(){
+  return `<div class="progress-overview"><strong>Gesamtfortschritt:</strong> ${overallProgress()}%<br>`+
+    EXERCISES.filter(ex=>ex!=="exam").map(ex=>`${EXERCISE_NAMES[ex]}: ${Number((exerciseProgress||{})[ex])||0}%`).join("<br>")+
+    `</div>`;
+}
+
+function stats(){$("statsLine").innerHTML=`📌 Fortschritt/Punkte: <b>${score}</b> · ✅ Richtig: <b>${correct}/${attempts}</b> (${attempts?Math.round(correct*100/attempts):0}%)`}
+function updateStatsBox(){$("statsBox").innerHTML=`<div class="stat"><div>Aktivität</div><div class="num">${score}</div></div><div class="stat"><div>Richtig</div><div class="num">${correct}/${attempts}</div></div><div class="stat"><div>Genauigkeit</div><div class="num">${attempts?Math.round(correct*100/attempts):0}%</div></div><div class="stat"><div>Modus</div><div class="num">${EXERCISE_NAMES[game].split(" ")[0]}</div></div>`}
 function updateExerciseTracker(){
   $("exerciseTracker").innerHTML = EXERCISES.map(ex => {
     let locked = ex==="exam" && !allTrainingComplete();
-    let progress = exerciseProgress[ex] || 0;
-    let label = locked ? "🔒 gesperrt" : progress + "%";
+    let progress = Math.max(0, Math.min(100, Number((exerciseProgress||{})[ex]) || 0));
+    let label = locked ? "🔒 gesperrt" : String(progress) + "%";
     return `<button type="button" class="exercise-item ${ex===game?'active':''} ${progress>=90?'completed':''} ${ex==='exam'?'exam':''}" data-exercise="${ex}" ${locked ? "disabled" : ""}>
       <div>${EXERCISE_NAMES[ex]}</div>
       <div class="small">${label}</div>
@@ -411,6 +616,25 @@ function mode(m){
 function normalizeGermanNumber(t){return (t||"").replace(/\beins\b/g,"1").replace(/\bein\b/g,"1").replace(/\bzwei\b/g,"2").replace(/\bdrei\b/g,"3").replace(/\bvier\b/g,"4").replace(/\bfünf\b/g,"5").replace(/\bfuenf\b/g,"5").replace(/\bsechs\b/g,"6").replace(/\bsieben\b/g,"7").replace(/\bacht\b/g,"8").replace(/\bneun\b/g,"9").replace(/\bzehn\b/g,"10")}
 function clean(t){return normalizeGermanNumber(String(t||"").toLowerCase()).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ß/g,"ss").replace(/[.,!?;:]/g,"").replace(/\s+/g," ").trim()}
 
+
+function countryFromPhrase(country){
+  const articles = {
+    "Ukraine": "der Ukraine",
+    "Türkei": "der Türkei",
+    "Schweiz": "der Schweiz",
+    "Slowakei": "der Slowakei",
+    "USA": "den USA",
+    "Niederlande": "den Niederlanden",
+    "Philippinen": "den Philippinen",
+    "Iran": "dem Iran",
+    "Irak": "dem Irak",
+    "Sudan": "dem Sudan",
+    "Jemen": "dem Jemen",
+    "Libanon": "dem Libanon"
+  };
+  return articles[country] || country;
+}
+
 function fillTemplate(t, p=studentPerson){
   p = p || {};
   let first = p.fname || DEFAULT_PROFILE.fname || "";
@@ -426,6 +650,7 @@ function fillTemplate(t, p=studentPerson){
     .replaceAll("{fname}", first)
     .replaceAll("{lname}", last)
     .replaceAll("{origin}", p.origin || DEFAULT_PROFILE.origin || "")
+    .replaceAll("{origin_from}", countryFromPhrase(p.origin || DEFAULT_PROFILE.origin || ""))
     .replaceAll("{lang}", p.lang || DEFAULT_PROFILE.lang || "")
     .replaceAll("{city}", p.city || DEFAULT_PROFILE.city || "")
     .replaceAll("{birthplace}", p.birthplace || DEFAULT_PROFILE.birthplace || "")
@@ -452,43 +677,122 @@ function questionVariants(x=item()){
  if(x.topic==="Nachname")q.push("Wie heißen Sie mit Nachnamen?","Wie heißt du mit Nachnamen?");
  return [...new Set(q)];
 }
-function ok(user){let u=clean(user);return answerVariants().some(v=>{let a=clean(v);return u===a||(u.length>3&&a.includes(u))||(a.length>3&&u.includes(a))})}
-function okQuestion(user,x=item()){let u=clean(user);return questionVariants(x).some(q=>{let a=clean(q);return u===a||(u.length>5&&a.includes(u))||(a.length>5&&u.includes(a))})}
-function getAnswer(){return answerVariants()[0]||"..."}
-function responseHint(){let x=item(); if(game==="puzzle")return puzzleHelpText(); if(x.topic==="Name")return "Beginnen Sie mit: Ich heiße ..."; if(x.topic==="Heimatland")return "Beginnen Sie mit: Ich komme aus ..."; if(x.topic==="Sprache")return "Beginnen Sie mit: Ich spreche ..."; if(x.topic==="Wohnort")return "Beginnen Sie mit: Ich wohne in ..."; if(x.topic==="Alter")return "Beginnen Sie mit: Ich bin ... Jahre alt."; if(x.topic==="Geburtsort")return "Beginnen Sie mit: Ich bin in ... geboren."; if(x.topic.startsWith("Buchstabieren"))return "Schreiben Sie die Buchstaben einzeln, z. B. a l i."; return "Antworten Sie mit einem passenden Satz."}
-function puzzleHelpText(){
-  let topic=item().topic, first=item().qSie.split(" ")[0];
-  if(topic.includes("Heimatland")) return "Baue eine Frage nach der Herkunft. Beginne mit <strong>Woher</strong>.";
-  if(topic.includes("Sprache")) return "Baue eine Frage nach der Sprache. Beginne mit <strong>Was</strong>.";
-  if(topic.includes("Kinder")) return "Baue eine Frage nach Kindern. Beginne mit <strong>Haben</strong>.";
-  if(topic.includes("Familienstand")) return "Baue eine Frage zum Familienstand. Beginne mit <strong>Sind</strong>.";
-  if(topic.includes("Wohnort")) return "Baue eine Frage nach dem Wohnort. Beginne mit <strong>Wo</strong>.";
-  if(topic.includes("Alter")) return "Baue eine Frage nach dem Alter. Beginne mit <strong>Wie alt</strong>.";
-  if(topic.includes("Geburtsort")) return "Baue eine Frage nach dem Geburtsort. Beginne mit <strong>Wo</strong>.";
-  if(topic.includes("Buchstabieren")) return "Baue eine Buchstabier-Frage. Beginne mit <strong>Buchstabieren Sie bitte</strong>.";
-  return "Baue die Frage. Beginne mit <strong>"+first+"</strong>.";
+
+function compactName(t){
+  return clean(t).replace(/\s+/g,"").replace(/-/g,"");
 }
-function speakText(t,slow=false){if(!("speechSynthesis" in window))return alert("Sprachausgabe wird nicht unterstützt.");let u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=slow?.55:.85;speechSynthesis.cancel();speechSynthesis.speak(u)}
-function spellSlow(name){speakText(String(name||"").toUpperCase().split("").join(" ... "),true)}
-function speakCurrent(){let x=item(); if(x.topic==="Buchstabieren Vorname")spellSlow(studentPerson.fname); else if(x.topic==="Buchstabieren Nachname")spellSlow(studentPerson.lname); else speakText(x.qSie)}
-function getCrossTopicAnswers(){let correct=getAnswer(),pool=[];DATA.forEach(d=>{if(d.topic!==item().topic)answerVariants(d).forEach(a=>{if(clean(a)!==clean(correct)&&!pool.some(p=>clean(p)===clean(a)))pool.push(a)})});return shuffle([correct,...shuffle(pool).slice(0,3)])}
-function getWrongQuickAnswers(){
- let c=getAnswer(), x=item(); let base=[];
- if(x.topic==="Name")base=[`Ich heißt ${studentPerson.fname}.`,`Ich heißen ${studentPerson.fname}.`,`Ich heiße aus ${studentPerson.fname}.`];
- else if(x.topic==="Wohnort")base=[`Ich wohnen in ${studentPerson.city}.`,`Ich wohne ${studentPerson.city}.`,`Ich wohnt in ${studentPerson.city}.`];
- else if(x.topic==="Alter")base=[`Ich habe ${studentPerson.age} Jahre.`,`Ich bin ${studentPerson.age} alt Jahre.`,`Ich sind ${studentPerson.age} Jahre alt.`];
- else if(x.topic==="Heimatland")base=[`Ich komme ${studentPerson.origin}.`,`Ich komme von ${studentPerson.origin}.`,`Ich bin aus ${studentPerson.origin} kommen.`];
- else if(x.topic==="Sprache")base=[`Ich sprechen ${studentPerson.lang}.`,`Ich kann ${studentPerson.lang} Sprache.`,`Ich spreche ${studentPerson.lang} und Deutsch bisschen.`];
- else base=getCrossTopicAnswers().filter(a=>clean(a)!==clean(c));
- return shuffle([c,...base.slice(0,3)]);
+function similarName(a,b){
+  a = compactName(a);
+  b = compactName(b);
+  const variants = [
+    ["mohammed","mohammad"],["muhammed","mohammad"],["mohamed","mohammad"],
+    ["achmed","ahmed"],["ahmad","ahmed"],["fatma","fatima"]
+  ];
+  variants.forEach(pair=>{
+    if(a===pair[0]) a=pair[1];
+    if(b===pair[0]) b=pair[1];
+  });
+  return a===b || (a.length>3 && b.length>3 && (a.includes(b)||b.includes(a)));
+}
+
+function ok(user){
+  let u=clean(user);
+  return answerVariants().some(v=>{
+    let a=clean(v);
+    return u===a || (u.length>3&&a.includes(u)) || (a.length>3&&u.includes(a)) || similarName(user,v);
+  });
+}
+
+function numberToGermanWords(num){
+  num = Number(num);
+  const ones = ["null","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf","dreizehn","vierzehn","fünfzehn","sechzehn","siebzehn","achtzehn","neunzehn"];
+  const tens = ["","","zwanzig","dreißig","vierzig","fünfzig","sechzig","siebzig","achtzig","neunzig"];
+  if(num < 20) return ones[num] || String(num);
+  if(num < 100){
+    let o = num % 10, t = Math.floor(num/10);
+    if(o === 0) return tens[t];
+    return (o===1 ? "ein" : ones[o]) + "und" + tens[t];
+  }
+  if(num < 1000){
+    let h = Math.floor(num/100), rest = num % 100;
+    return (h===1 ? "einhundert" : ones[h]+"hundert") + (rest ? numberToGermanWords(rest) : "");
+  }
+  return String(num);
+}
+
+function germanizeNumbersForSpeech(text){
+  return String(text || "").replace(/\b\d{1,3}\b/g, m => numberToGermanWords(parseInt(m,10)));
+}
+
+function getGermanVoice(){
+  const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+  return voices.find(v => (v.lang || "").toLowerCase().startsWith("de-de"))
+      || voices.find(v => (v.lang || "").toLowerCase().startsWith("de"))
+      || voices.find(v => /german|deutsch/i.test(v.name || ""))
+      || null;
+}
+
+function speakText(t,slow=false){
+  if(!("speechSynthesis" in window)) return alert("Sprachausgabe wird nicht unterstützt.");
+  let spoken = germanizeNumbersForSpeech(t);
+  let u = new SpeechSynthesisUtterance(spoken);
+  u.lang = "de-DE";
+  u.rate = slow ? 0.48 : 0.72;
+  u.pitch = 1;
+  u.volume = 1;
+  const voice = getGermanVoice();
+  if(voice) u.voice = voice;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+
+function showTwoStageHelp(){
+  const fb = $("feedback");
+  if(!fb) return;
+  helpWrongTries = helpWrongTries || 0;
+  if(helpWrongTries < 1){
+    fb.innerHTML = `<div class="help-box"><strong>Tipp:</strong> ${responseHint()}</div>`;
+    helpWrongTries = 1;
+  }else{
+    fb.innerHTML = `<div class="answer-box"><strong>Richtige Antwort:</strong><br>${answerVariants().join("<br>")}</div>`;
+    helpWrongTries = 2;
+  }
+}
+function showQuestionHelp(){
+  const fb = $("feedback");
+  if(!fb) return;
+  helpWrongTries = helpWrongTries || 0;
+  if(helpWrongTries < 1){
+    fb.innerHTML = `<div class="help-box"><strong>Tipp:</strong> ${typeof puzzleHelpText==="function" ? puzzleHelpText() : responseHint()}</div>`;
+    helpWrongTries = 1;
+  }else{
+    fb.innerHTML = `<div class="answer-box"><strong>Richtige Frage:</strong><br>${questionVariants().join("<br>")}</div>`;
+    helpWrongTries = 2;
+  }
 }
 
 function mark(good,userAnswer=""){
- attempts++;answerHistory.push({question:item().topic,correct:good,answer:userAnswer,acceptedAnswers:game==="puzzle"?questionVariants():answerVariants(),timestamp:new Date().toLocaleTimeString()});
+ attempts++;
+ answerHistory.push({question:item().topic,correct:good,answer:userAnswer,acceptedAnswers:game==="puzzle"?questionVariants():answerVariants(),timestamp:new Date().toLocaleTimeString()});
  if(good){correct++;score+=10;helpWrongTries=0}
- exerciseProgress[game]=Math.max(exerciseProgress[game]||0,Math.round(((i+(good?1:0))/DATA.length)*100));
- if(good){$("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>";}
- else{helpWrongTries++; if(helpWrongTries<2)$("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Versuche es noch einmal. Hilfe bekommst du nach dem zweiten falschen Versuch.</div>"; else if(game==="puzzle")$("feedback").innerHTML=`<div class='no'>❌ Noch nicht richtig.</div><div class='small'><strong>Hilfe:</strong> ${puzzleHelpText()}</div>`; else $("feedback").innerHTML=`<div class='no'>❌ Noch nicht richtig.</div><div class='small'><strong>Hilfe:</strong> ${responseHint()}</div>`;}
+ exerciseProgress[game]=Math.max((exerciseProgress||{})[game]||0,Math.round(((i+(good?1:0))/DATA.length)*100));
+ if(good){
+   $("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>";
+ }else{
+   helpWrongTries++;
+   if(helpWrongTries===1){
+     $("feedback").innerHTML="<div class='no'>❌ Nicht ganz. Versuche es noch einmal.</div>";
+   }else if(helpWrongTries===2){
+     $("feedback").innerHTML=`<div class='no'>❌ Noch nicht richtig.</div><div class='help-box'><strong>Tipp:</strong> ${game==="puzzle"?puzzleHelpText():responseHint()}</div>`;
+   }else{
+     if(game==="puzzle"){
+       $("feedback").innerHTML=`<div class='no'>❌ Noch nicht richtig.</div><div class='answer-box'><strong>Richtige Frage:</strong><br>${questionVariants().join("<br>")}</div>`;
+     }else{
+       $("feedback").innerHTML=`<div class='no'>❌ Noch nicht richtig.</div><div class='answer-box'><strong>Richtige Antwort:</strong><br>${answerVariants().join("<br>")}</div>`;
+     }
+   }
+ }
  saveLocal();updateAll();showAdvanceButton(good);
 }
 function showAdvanceButton(good){let fb=$("feedback"); if(!fb||!good)return; document.querySelectorAll("#nextQuestionBtn,#continueExerciseBtn").forEach(b=>b.remove()); if(i>=DATA.length-1){exerciseProgress[game]=100;fb.insertAdjacentHTML("beforeend",`<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`);$("continueExerciseBtn").onclick=goNextExercise}else{fb.insertAdjacentHTML("beforeend",`<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`);$("nextQuestionBtn").onclick=()=>{i++;helpWrongTries=0;responseTries=0;saveLocal();render()}}}
@@ -511,6 +815,18 @@ function markResponse(good,userAnswer=""){
 }
 function escapeHtml(s){return String(s).replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
 
+
+function showTranscript(text){
+  const box = $("transcriptBox");
+  if(box){
+    box.classList.remove("hidden");
+    box.innerHTML = `<div class="help-box"><strong>Transkription:</strong><br>${escapeHtml(text)}</div>`;
+  }
+}
+function transcriptButton(textExpr){
+  return `<button class="secondary" onclick="showTranscript(${textExpr})">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div>`;
+}
+
 function render(){
  try{
 
@@ -518,19 +834,19 @@ function render(){
  if(!["listen","listenrespond"].includes(game))html+=`<p class="small">Thema: ${x.topic}</p>`;
  if(game==="learn"){
   let ans=getAnswer(),alts=answerVariants(x).filter(a=>clean(a)!==clean(ans));
-  html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakText(getAnswer())">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
+  html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakDictationAnswer()">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
  }
- if(game==="qa"){html+=`<div class="big">${q}</div><input id="ans" placeholder="Antwort schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small>Hilfe kommt erst nach dem zweiten falschen Versuch.</div>'">Hilfe</button><div id="feedback"></div>`}
- if(game==="speak"){html+=`<div class="big">${q}</div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenSpeech()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder Antwort schreiben..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
+ if(game==="qa"){html+=`<div class="big">${q}</div><input id="ans" placeholder="Antwort schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><button class="secondary" onclick="showTwoStageHelp()">Hilfe</button><div id="feedback"></div>`}
+ if(game==="speak"){html+=`<div class="big">${q}</div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenSpeech()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
  if(game==="puzzle"){
   let words=shuffle(q.replace("?"," ?").split(/\s+/).filter(Boolean));
   html+=`<p>🧩 Baue die Frage richtig zusammen.</p><div id="chosen"></div><div id="wordList">${words.map(w=>`<button class="word" onclick="chooseWord(this)">${escapeHtml(w)}</button>`).join("")}</div><button onclick="checkPuzzle()">Überprüfen</button><button class="secondary" onclick="render()">Neu</button><div id="feedback"></div>`;
  }
- if(game==="dictation"){let ans=getAnswer();html+=`<p>✍️ Höre und schreibe die Antwort.</p><button onclick="speakText(getAnswer())">🔊 Antwort hören</button><input id="ans" placeholder="Schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><div id="feedback"></div>`}
+ if(game==="dictation"){let ans=getAnswer();html+=`<p>✍️ Höre und schreibe die Antwort.</p><button onclick="speakText(getAnswer())">🔊 Antwort hören</button><button class="secondary" onclick="showTranscript(getAnswer())">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><input id="ans" placeholder="Schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><div id="feedback"></div>`}
  if(game==="memory"){html+=`<p>🃏 Finde Frage und passende Antwort.</p><div class="memory" id="memoryGrid"></div><div id="feedback"></div>`}
  if(game==="quickfire"){html+=`<div class="big">${q}</div><p>⚡ Wähle die richtige Antwort.</p>${getWrongQuickAnswers().map(a=>`<button type="button" class="option quiz-option" data-answer="${escapeHtml(a)}" onclick="quickfireClick(this)">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
- if(game==="listen"){html+=`<p>🎧 Höre die Frage. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button>${getCrossTopicAnswers().map(a=>`<button class="option" onclick="mark(ok(this.dataset.answer),this.dataset.answer)" data-answer="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
- if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder Antwort schreiben..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
+ if(game==="listen"){html+=`<p>🎧 Höre die Frage. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button><button class="secondary" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div>${getCrossTopicAnswers().map(a=>`<button class="option" onclick="mark(ok(this.dataset.answer),this.dataset.answer)" data-answer="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
+ if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="speakCurrent()">🔊 Frage abspielen</button><button class="secondary" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
  if(game==="exam"){html+=`<div id="examTimer" class="small"></div><p>Bilde die passende Frage zu diesem Begriff:</p><div class="big">🔎 ${x.topic}</div><input id="ans" placeholder="Passende Frage schreiben..."><button onclick="markExam(okQuestion($('ans').value),$('ans').value)">Überprüfen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenExamQuestion()">🎤 Frage sprechen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small><strong>Hilfe:</strong> '+examQuestionHint()+'</div>'">Hilfe</button><button class="success hidden" id="nextExamBtn" onclick="nextExam()">⏭️ Nächste Prüfungsaufgabe</button><p id="heard"></p><div id="feedback"></div>`; setTimeout(updateExamTimer,0)}
  $("game").innerHTML=html; if(game==="memory")renderMemoryGrid(); stats(); updateStatsBox();
  }catch(e){
@@ -547,85 +863,79 @@ function setupMemory(){memoryCards=[];first=null;lock=false;DATA.forEach((x,j)=>
 function renderMemoryGrid(){let g=$("memoryGrid");if(!g)return;g.innerHTML=memoryCards.map((c,idx)=>`<button class="memcard ${c.open?'open':''} ${c.done?'done':''}" onclick="flip(${idx})">${c.open||c.done?escapeHtml(c.text):"?"}</button>`).join("")}
 function flip(idx){if(lock)return;let c=memoryCards[idx];if(!c||c.done||c.open)return;c.open=true;renderMemoryGrid();if(first===null){first=idx;return}lock=true;attempts++;let a=memoryCards[first],b=memoryCards[idx],good=a.pair===b.pair&&a.kind!==b.kind;setTimeout(()=>{if(good){a.done=b.done=true;correct++;score+=10;$("feedback").innerHTML="<div class='ok'>✔ Paar gefunden!</div>"}else{a.open=b.open=false;$("feedback").innerHTML="<div class='no'>❌ Kein Paar.</div>"}first=null;lock=false;if(memoryCards.every(c=>c.done)){exerciseProgress.memory=100;$("feedback").innerHTML+="<button class='success' onclick='goNextExercise()'>✅ Du darfst weiter</button>"}saveLocal();updateAll();renderMemoryGrid()},650)}
 
+
+function speakDictationAnswer(){
+  const x = item();
+  if(x.topic && x.topic.startsWith("Buchstabieren")){
+    const n = x.topic.includes("Nachname") ? studentPerson.lname : studentPerson.fname;
+    spellSlow(n);
+  }else{
+    speakText(getAnswer(), true);
+  }
+}
+
 function setMic(on){let m=$("micStatus");if(m)m.innerHTML=on?"🔴 Mikrofon aktiv – ich höre zu ...":"⚪ Mikrofon aus"}
-function recog(cb){if(!("webkitSpeechRecognition" in window))return alert("Speech Recognition braucht Chrome/Edge.");let r=new webkitSpeechRecognition();r.lang="de-DE";r.onstart=()=>setMic(true);r.onend=()=>setMic(false);r.onerror=()=>setMic(false);r.onresult=e=>cb(e.results[e.results.length-1][0].transcript);r.start()}
-function listenSpeech(){recog(t=>{$("heard").innerText="Gesprochen: "+t;markResponse(ok(t),t)})}
-function listenAndRespond(){recog(t=>{$("heard").innerText="Gehört: "+t;markResponse(ok(t),t)})}
-function listenExamQuestion(){recog(t=>{$("heard").innerText="Gesprochen: "+t;markExam(okQuestion(t),t)})}
+function recog(cb){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    alert("Mikrofon/Spracherkennung wird auf diesem Gerät oder Browser nicht unterstützt. Bitte die Antwort tippen.");
+    return;
+  }
+  try{
+    let r=new SR();
+    r.lang="de-DE";
+    r.interimResults=true;
+    r.continuous=true;
+    r.maxAlternatives=3;
+    let finalText = "";
+    let silenceTimer = null;
+    const stopLater = () => {
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(()=>{ try{r.stop()}catch(e){} }, 6500);
+    };
+    r.onstart=()=>{setMic(true); stopLater();};
+    r.onend=()=>{setMic(false); if(finalText.trim()) cb(finalText.trim());};
+    r.onerror=e=>{
+      setMic(false);
+      let msg = "Mikrofonfehler. Bitte Antwort tippen.";
+      if(e && e.error==="not-allowed") msg = "Mikrofon ist blockiert. Bitte im Browser erlauben oder Antwort tippen.";
+      if(e && e.error==="no-speech") msg = "Ich habe nichts gehört. Bitte noch einmal sprechen oder tippen.";
+      alert(msg);
+    };
+    r.onresult=e=>{
+      stopLater();
+      let txt = "";
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        txt += e.results[i][0].transcript + " ";
+        if(e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+      }
+      const heard = $("heard");
+      if(heard) heard.innerText = "Gehört: " + (finalText || txt);
+    };
+    r.start();
+  }catch(err){
+    setMic(false);
+    alert("Mikrofon konnte nicht gestartet werden. Bitte Antwort tippen.");
+  }
+}
 
-function startExam(){examStartTime=Date.now();examCorrect=0;examAttempts=0;examFinished=false;if(examTimer)clearInterval(examTimer);examTimer=setInterval(updateExamTimer,1000)}
-function formatTime(ms){let s=Math.floor(ms/1000),m=Math.floor(s/60);return m+":"+String(s%60).padStart(2,"0")}
-function examScore(){let acc=examAttempts?examCorrect/examAttempts:0,elapsed=examStartTime?Math.floor((Date.now()-examStartTime)/1000):0;return Math.max(0,Math.round(acc*1000-elapsed))}
-function updateExamTimer(){let e=$("examTimer");if(e&&examStartTime)e.innerHTML=`⏱️ Zeit: <b>${formatTime(Date.now()-examStartTime)}</b> · 🎯 Genauigkeit: <b>${examAttempts?Math.round(examCorrect*100/examAttempts):0}%</b> · Wert: <b>${examScore()}</b>`}
-function examQuestionHint(){let t=item().topic;if(t==="Geburtsort")return "Frage nach dem Geburtsort, z. B. mit „Wo ... geboren?“";if(t==="Alter")return "Frage nach dem Alter.";if(t==="Wohnort")return "Frage nach dem Wohnort.";if(t==="Heimatland")return "Frage nach der Herkunft.";return "Bilde die passende Frage."}
-function markExam(good,u=""){attempts++;examAttempts++;answerHistory.push({question:item().topic,correct:good,answer:u,acceptedAnswers:questionVariants(),exam:true,timestamp:new Date().toLocaleTimeString()});if(good){correct++;examCorrect++;score+=10;$("feedback").innerHTML="<div class='ok'>✔ Richtig!</div>"}else{$("feedback").innerHTML=`<div class='no'>❌ Nicht richtig.</div><div class='small'>Akzeptiert: ${questionVariants().join(" · ")}</div>`}$("nextExamBtn").classList.remove("hidden");updateExamTimer();saveLocal();updateAll()}
-function nextExam(){if(i>=DATA.length-1)finishExam();else{i++;render()}}
-function finishExam(){if(examTimer)clearInterval(examTimer);let res={name:student,course,score:examScore(),time:formatTime(Date.now()-examStartTime),accuracy:examAttempts?Math.round(examCorrect*100/examAttempts):0,date:new Date().toLocaleString()};let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");b.push(res);b.sort((a,b)=>b.score-a.score);localStorage.setItem("A1_EXAM_RESULTS",JSON.stringify(b));exerciseProgress.exam=100;updateAll();$("game").innerHTML=`<h2>🏆 Prüfung abgeschlossen</h2><div class='ok'>Ergebnis veröffentlicht.</div><p>Zeit: ${res.time}<br>Genauigkeit: ${res.accuracy}%<br>Wert: ${res.score}</p><button onclick='showLeaderboard()'>Bestenliste</button>`}
 
-
-function openTeacherStats(){
-  const c = ($("teacherCourse").value||"").trim();
-  const p = ($("teacherPass").value||"").trim();
-  if(!c){alert("Bitte Kursnummer eingeben."); return;}
-  if(p !== "Ergebnisse"){alert("Falsches Passwort."); return;}
-
+function showCourseRanking(){
+  const c = course || ($("course")?.value || "");
   let students = JSON.parse(localStorage.getItem("A1_STUDENTS_"+c)||"[]");
-  let exams = JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]").filter(e=>e.course===c);
-
-  // Auch direkte A1_ Speicher durchsuchen, falls ältere Daten noch nicht im Register sind.
-  Object.keys(localStorage).forEach(k=>{
-    if(k.startsWith("A1_"+c+"_")){
-      try{
-        let d=JSON.parse(localStorage.getItem(k));
-        if(d && d.student && !students.some(s=>s.student===d.student)){
-          students.push({
-            student:d.student,
-            course:d.course,
-            score:d.score||0,
-            attempts:d.attempts||0,
-            correct:d.correct||0,
-            accuracy:d.attempts?Math.round((d.correct||0)*100/d.attempts):0,
-            exerciseProgress:d.exerciseProgress||{},
-            date:d.date||""
-          });
-        }
-      }catch(e){}
-    }
-  });
-
-  let exNames = trainingExercises();
-  let html = `<h3>Statistik für Kurs: ${escapeHtml(c)}</h3>`;
+  students = students.sort((a,b)=>(overallOfProgress(b.exerciseProgress||{}) - overallOfProgress(a.exerciseProgress||{})));
   if(!students.length){
-    html += `<div class="no">Noch keine lokalen Daten für diesen Kurs auf diesem Gerät.</div>`;
-  }else{
-    html += `<table><tr><th>TN</th><th>Punkte</th><th>Richtig</th><th>Versuche</th><th>Genauigkeit</th><th>Erledigt</th><th>Letzte Aktivität</th></tr>`;
-    students.sort((a,b)=>(b.score||0)-(a.score||0)).forEach(s=>{
-      let done = exNames.filter(ex => ((s.exerciseProgress||{})[ex]||0) >= 90).length;
-      html += `<tr>
-        <td>${escapeHtml(s.student)}</td>
-        <td>${s.score||0}</td>
-        <td>${s.correct||0}</td>
-        <td>${s.attempts||0}</td>
-        <td>${s.accuracy||0}%</td>
-        <td>${done}/${exNames.length}</td>
-        <td>${escapeHtml(s.date||"")}</td>
-      </tr>`;
-    });
-    html += `</table>`;
+    alert("Noch keine Kursdaten auf diesem Gerät. Gemeinsame Rangliste über Google Sheet braucht eine Lese-API.");
+    return;
   }
-
-  html += `<h3>Prüfungsergebnisse</h3>`;
-  if(!exams.length){
-    html += `<p>Noch keine Prüfungsergebnisse für diesen Kurs.</p>`;
-  }else{
-    html += `<table><tr><th>TN</th><th>Wert</th><th>Zeit</th><th>Genauigkeit</th><th>Datum</th></tr>`;
-    exams.sort((a,b)=>(b.score||0)-(a.score||0)).forEach(e=>{
-      html += `<tr><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${e.time}</td><td>${e.accuracy}%</td><td>${escapeHtml(e.date||"")}</td></tr>`;
-    });
-    html += `</table>`;
-  }
-
-  $("teacherStatsBox").innerHTML = html;
+  const html = `<div class="rank-box"><strong>Kurs-Rangliste (${escapeHtml(c)}):</strong><br>` +
+    students.map((s,idx)=>`${idx+1}. ${escapeHtml(s.student)} – ${overallOfProgress(s.exerciseProgress||{})}%`).join("<br>") + `</div>`;
+  $("game").insertAdjacentHTML("afterbegin", html);
+}
+function overallOfProgress(progress){
+  let list = EXERCISES.filter(ex=>ex!=="exam");
+  if(!list.length) return 0;
+  return Math.round(list.reduce((s,ex)=>s+(Number(progress[ex])||0),0)/list.length);
 }
 
 function showLeaderboard(){let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");$("leaderboard").innerHTML=b.length?b.map((e,i)=>`<div class="leader"><b>${i+1}. ${escapeHtml(e.name)}</b> · ${escapeHtml(e.course)}<br>Wert: ${e.score} · Zeit: ${e.time} · Genauigkeit: ${e.accuracy}%</div>`).join(""):"Noch keine Ergebnisse.";$("app").classList.add("hidden");$("leaderboardSection").classList.remove("hidden")}
@@ -672,6 +982,10 @@ window.addEventListener("error", e => {
   }
 });
 
+
+if("speechSynthesis" in window){
+  speechSynthesis.onvoiceschanged = () => getGermanVoice();
+}
 window.addEventListener("load", restoreSession);
 </script>
 </body>
