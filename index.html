@@ -284,6 +284,13 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 </main>
 
 <script>
+
+if(!String.prototype.replaceAll){
+  String.prototype.replaceAll = function(search, replacement){
+    return this.split(search).join(replacement);
+  };
+}
+
 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxqlwbjbdFSQuXWz2en2cNxGk7ldTJIITdksJvhzJ8Yu-JDzrfvqfXcD0Yj5-fzu36__w/exec";
 const COUNTRIES = {
   "Deutschland": "Deutsch", "Syrien": "Arabisch", "Ukraine": "Ukrainisch", "Afghanistan": "Dari",
@@ -298,8 +305,8 @@ const DEFAULT_PROFILE = {fname:"Max",lname:"Mustermann",full:"Max Mustermann",or
 
 const DATA = [
  {topic:"Name",qSie:"Wie heißen Sie?",qDu:"Wie heißt du?",answerTemplates:["Ich heiße {fname}.","Ich heiße {name}.","Ich bin {fname}.","Ich bin {name}.","Mein Name ist {fname}.","Mein Name ist {name}."]},
- {topic:"Vorname",qSie:"Wie heißen Sie mit Vornamen?",qDu:"Wie heißt du mit Vornamen?",answerTemplates:["Mein Vorname ist {fname}.","Ich heiße {fname}.","{fname}."]},
- {topic:"Nachname",qSie:"Wie heißen Sie mit Nachnamen?",qDu:"Wie heißt du mit Nachnamen?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
+ {topic:"Vorname",qSie:"Wie ist Ihr Vorname?",qDu:"Wie ist dein Vorname?",answerTemplates:["Mein Vorname ist {fname}.","Ich heiße {fname}.","{fname}."]},
+ {topic:"Nachname",qSie:"Wie ist Ihr Nachname?",qDu:"Wie ist dein Nachname?",answerTemplates:["Mein Nachname ist {lname}.","Ich heiße {lname}.","{lname}."]},
  {topic:"Heimatland",qSie:"Woher kommen Sie?",qDu:"Woher kommst du?",answerTemplates:["Ich komme aus {origin_from}.","Ich bin aus {origin_from}.","Aus {origin_from}."]},
  {topic:"Sprache",qSie:"Was sprechen Sie?",qDu:"Was sprichst du?",answerTemplates:["Ich spreche {lang} und ein bisschen Deutsch.","Ich spreche {lang}.","{lang}.","{lang} und ein bisschen Deutsch."]},
  {topic:"Buchstabieren Vorname",qSie:"Buchstabieren Sie bitte Ihren Vornamen.",qDu:"Buchstabiere bitte deinen Vornamen.",answerTemplates:["{spell_fname}","{spell_fname_space}"]},
@@ -725,12 +732,7 @@ function languageAnswerTemplates(){
     "{lang} und ein bisschen Deutsch."
   ];
 }
-function normalizeSpeechText(text){
-  return String(text||"")
-    .replace(/\bSt\.\s*/g,"Sankt ")
-    .replace(/\bStr\.\b/g,"Straße")
-    .replace(/\bNr\.\b/g,"Nummer");
-}
+
 
 function fillTemplate(t, p=studentPerson){
   p = p || {};
@@ -777,8 +779,8 @@ function getAnswer(x=item()){
 function questionVariants(x=item()){
  let q=[x.qSie,x.qDu].filter(Boolean);
  if(x.topic==="Name")q.push("Wie ist Ihr Name?","Wie ist dein Name?");
- if(x.topic==="Vorname")q.push("Wie heißen Sie mit Vornamen?","Wie heißt du mit Vornamen?");
- if(x.topic==="Nachname")q.push("Wie heißen Sie mit Nachnamen?","Wie heißt du mit Nachnamen?");
+ if(x.topic==="Vorname")q.push("Wie ist Ihr Vorname?","Wie ist dein Vorname?");
+ if(x.topic==="Nachname")q.push("Wie ist Ihr Nachname?","Wie ist dein Nachname?");
  return [...new Set(q)];
 }
 
@@ -807,6 +809,13 @@ function ok(user){
   });
 }
 
+
+
+
+
+
+
+
 function numberToGermanWords(num){
   num = Number(num);
   const ones = ["null","eins","zwei","drei","vier","fünf","sechs","sieben","acht","neun","zehn","elf","zwölf","dreizehn","vierzehn","fünfzehn","sechzehn","siebzehn","achtzehn","neunzehn"];
@@ -817,38 +826,60 @@ function numberToGermanWords(num){
     if(o === 0) return tens[t];
     return (o===1 ? "ein" : ones[o]) + "und" + tens[t];
   }
-  if(num < 1000){
-    let h = Math.floor(num/100), rest = num % 100;
-    return (h===1 ? "einhundert" : ones[h]+"hundert") + (rest ? numberToGermanWords(rest) : "");
-  }
   return String(num);
 }
-
 function germanizeNumbersForSpeech(text){
   return String(text || "").replace(/\b\d{1,3}\b/g, m => numberToGermanWords(parseInt(m,10)));
 }
-
+function normalizeSpeechText(text){
+  return String(text||"")
+    .replace(/\bSt\.\s*/g,"Sankt ")
+    .replace(/\bStr\.\b/g,"Straße")
+    .replace(/\bNr\.\b/g,"Nummer");
+}
 function getGermanVoice(){
-  const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
-  return voices.find(v => (v.lang || "").toLowerCase().startsWith("de-de"))
-      || voices.find(v => (v.lang || "").toLowerCase().startsWith("de"))
-      || voices.find(v => /german|deutsch/i.test(v.name || ""))
-      || null;
+  try{
+    const synth = window.speechSynthesis;
+    if(!synth || !synth.getVoices) return null;
+    const voices = synth.getVoices() || [];
+    return voices.find(v => (v.lang || "").toLowerCase().startsWith("de-de"))
+        || voices.find(v => (v.lang || "").toLowerCase().startsWith("de"))
+        || voices.find(v => /german|deutsch/i.test(v.name || ""))
+        || null;
+  }catch(e){
+    return null;
+  }
 }
 
 function speakText(t,slow=false){
-  if(!("speechSynthesis" in window)) return alert("Sprachausgabe wird nicht unterstützt.");
-  let spoken = germanizeNumbersForSpeech(t);
+  try{
+    if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){
+      const msg = "Sprachausgabe wird auf diesem Gerät/Browser nicht unterstützt.";
+      const fb = $("feedback");
+      if(fb) fb.innerHTML = `<div class="no">${msg}</div>`;
+      else alert(msg);
+      return false;
+    }
+    let spoken = germanizeNumbersForSpeech(t);
     spoken = normalizeSpeechText(spoken);
-  let u = new SpeechSynthesisUtterance(spoken);
-  u.lang = "de-DE";
-  u.rate = slow ? 0.48 : 0.72;
-  u.pitch = 1;
-  u.volume = 1;
-  const voice = getGermanVoice();
-  if(voice) u.voice = voice;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(u);
+    let u = new SpeechSynthesisUtterance(spoken);
+    u.lang = "de-DE";
+    u.rate = slow ? 0.48 : 0.72;
+    u.pitch = 1;
+    u.volume = 1;
+    const voice = getGermanVoice();
+    if(voice) u.voice = voice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    return true;
+  }catch(e){
+    console.error("Sprachausgabe-Fehler:", e);
+    const msg = "Beim Hören gab es ein Problem. Bitte versuchen Sie es noch einmal.";
+    const fb = $("feedback");
+    if(fb) fb.innerHTML = `<div class="no">${msg}</div>`;
+    else alert(msg);
+    return false;
+  }
 }
 
 
@@ -948,7 +979,7 @@ function mark(good,userAnswer=""){
  }
  saveLocal();updateAll();showAdvanceButton(good);
 }
-function showAdvanceButton(good){let fb=$("feedback"); if(!fb||!good)return; document.querySelectorAll("#nextQuestionBtn,#continueExerciseBtn").forEach(b=>b.remove()); if(i>=DATA.length-1){exerciseProgress[game]=100;fb.insertAdjacentHTML("beforeend",`<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`);$("continueExerciseBtn").onclick=goNextExercise}else{fb.insertAdjacentHTML("beforeend",`<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`);$("nextQuestionBtn").onclick=()=>{i++;helpWrongTries=0;responseTries=0;resetListenCounter();saveLocal();render()}}}
+function showAdvanceButton(good){let fb=$("feedback"); if(!fb||!good)return; document.querySelectorAll("#nextQuestionBtn,#continueExerciseBtn").forEach(b=>b.remove()); if(i>=DATA.length-1){exerciseProgress[game]=100;fb.insertAdjacentHTML("beforeend",`<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`);$("continueExerciseBtn").onclick=goNextExercise}else{fb.insertAdjacentHTML("beforeend",`<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`);$("nextQuestionBtn").onclick=()=>{i++;helpWrongTries=0;responseTries=0;resetListenCounter();resetListenCounter();saveLocal();render()}}}
 function goNextExercise(){let idx=EXERCISES.indexOf(game); if(idx<EXERCISES.length-1)mode(EXERCISES[idx+1]); else $("game").innerHTML="<h2>Fertig!</h2><div class='ok'>Alle Übungen abgeschlossen.</div>"}
 
 function quickfireClick(btn){
@@ -1013,6 +1044,45 @@ function getWrongQuickAnswers(){
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function spellSlow(name){
+  try{
+    const letters = String(name||"").toUpperCase().split("").join(" ... ");
+    speakText(letters, true);
+  }catch(e){
+    console.error("Buchstabieren-Fehler:", e);
+  }
+}
+function speakCurrent(){
+  try{
+    let x=item();
+    if(!x) return false;
+    if(x.topic==="Buchstabieren Vorname") spellSlow(studentPerson.fname);
+    else if(x.topic==="Buchstabieren Nachname") spellSlow(studentPerson.lname);
+    else speakText(x.qSie, false);
+    return true;
+  }catch(e){
+    console.error("Frage hören Fehler:", e);
+    const fb=$("feedback");
+    if(fb) fb.innerHTML = `<div class="no">Beim Hören gab es ein Problem.</div>`;
+    else alert("Beim Hören gab es ein Problem.");
+    return false;
+  }
+}
 function resetListenCounter(){
   listenClickCount = 0;
 }
@@ -1059,8 +1129,6 @@ function playDictationSlow(){
   }
   updateListenButtons();
 }
-
-
 function setMic(on){
   let m=$("micStatus");
   if(m)m.innerHTML=on?"🔴 Mikrofon aktiv – Sie können langsam sprechen ...":"⚪ Mikrofon aus";
@@ -1160,7 +1228,6 @@ function listenExamQuestion(){
     markExam(okQuestion(t),t);
   });
 }
-
 function render(){
  try{
 
@@ -1168,7 +1235,7 @@ function render(){
  if(!["listen","listenrespond"].includes(game))html+=`<p class="small">Thema: ${x.topic}</p>`;
  if(game==="learn"){
   let ans=getAnswer(),alts=answerVariants(x).filter(a=>clean(a)!==clean(ans));
-  html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakDictationAnswer()">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
+  html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakText(getAnswer(), true)">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
  }
  if(game==="qa"){html+=`<div class="big">${q}</div><input id="ans" placeholder="Antwort schreiben..."><button id="checkBtn" onclick="safeCheckAnswer()">Überprüfen</button><button class="secondary" onclick="showTwoStageHelp()">Hilfe</button><div id="feedback"></div>`}
  if(game==="speak"){html+=`<div class="big">${q}</div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenSpeech()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button id="checkBtn" onclick="safeCheckTypedRespond()">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
@@ -1199,12 +1266,18 @@ function flip(idx){if(lock)return;let c=memoryCards[idx];if(!c||c.done||c.open)r
 
 
 function speakDictationAnswer(){
-  const x = item();
-  if(x.topic && x.topic.startsWith("Buchstabieren")){
-    const n = x.topic.includes("Nachname") ? studentPerson.lname : studentPerson.fname;
-    spellSlow(n);
-  }else{
-    speakText(getAnswer(), true);
+  try{
+    const x = item();
+    if(x && x.topic && x.topic.startsWith("Buchstabieren")){
+      const n = x.topic.includes("Nachname") ? studentPerson.lname : studentPerson.fname;
+      spellSlow(n);
+    }else{
+      speakText(getAnswer(), true);
+    }
+  }catch(e){
+    console.error("Diktat-Hören-Fehler:", e);
+    const fb=$("feedback");
+    if(fb) fb.innerHTML = `<div class="no">Beim Hören gab es ein Problem.</div>`;
   }
 }
 
