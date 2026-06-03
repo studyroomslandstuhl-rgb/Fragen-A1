@@ -1129,6 +1129,18 @@ function playDictationSlow(){
   }
   updateListenButtons();
 }
+
+function cleanSpeechResult(text){
+  const words = String(text||"").trim().split(/\s+/);
+  let result = [];
+  for(let i=0;i<words.length;i++){
+    if(i===0 || words[i].toLowerCase() !== words[i-1].toLowerCase()){
+      result.push(words[i]);
+    }
+  }
+  return result.join(" ");
+}
+
 function setMic(on){
   let m=$("micStatus");
   if(m)m.innerHTML=on?"🔴 Mikrofon aktiv – Sie können langsam sprechen ...":"⚪ Mikrofon aus";
@@ -1146,9 +1158,9 @@ function recog(cb){
   try{
     let r = new SR();
     r.lang = "de-DE";
-    r.interimResults = true;
+    r.interimResults = false;
     try{
-      r.continuous = !(/iphone|ipad|safari/i.test(navigator.userAgent) && !/chrome|crios|android/i.test(navigator.userAgent));
+      r.continuous = false;
     }catch(e){}
     r.maxAlternatives = 3;
     let finalText = "";
@@ -1158,7 +1170,7 @@ function recog(cb){
     function finish(){
       if(didReturn) return;
       didReturn = true;
-      const result = (finalText || interimText || "").trim();
+      const result = cleanSpeechResult((finalText || interimText || "").trim());
       setMic(false);
       if(result) cb(result);
       else{
@@ -1183,7 +1195,7 @@ function recog(cb){
       let temp = "";
       for(let i=e.resultIndex; i<e.results.length; i++){
         const t = e.results[i][0].transcript || "";
-        if(e.results[i].isFinal) finalText += t + " ";
+        if(e.results[i].isFinal) finalText = t;
         else temp += t + " ";
       }
       interimText = (finalText + " " + temp).trim();
