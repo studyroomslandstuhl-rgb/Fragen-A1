@@ -278,13 +278,6 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 </main>
 
 <script>
-
-if(!String.prototype.replaceAll){
-  String.prototype.replaceAll = function(search, replacement){
-    return this.split(search).join(replacement);
-  };
-}
-
 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxqlwbjbdFSQuXWz2en2cNxGk7ldTJIITdksJvhzJ8Yu-JDzrfvqfXcD0Yj5-fzu36__w/exec";
 const COUNTRIES = {
   "Deutschland": "Deutsch", "Syrien": "Arabisch", "Ukraine": "Ukrainisch", "Afghanistan": "Dari",
@@ -783,41 +776,25 @@ function germanizeNumbersForSpeech(text){
 }
 
 function getGermanVoice(){
-  try{
-    const synth = window.speechSynthesis;
-    if(!synth || !synth.getVoices) return null;
-    const voices = synth.getVoices() || [];
-    return voices.find(v => (v.lang || "").toLowerCase().startsWith("de-de"))
-        || voices.find(v => (v.lang || "").toLowerCase().startsWith("de"))
-        || voices.find(v => /german|deutsch/i.test(v.name || ""))
-        || null;
-  }catch(e){
-    return null;
-  }
+  const voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+  return voices.find(v => (v.lang || "").toLowerCase().startsWith("de-de"))
+      || voices.find(v => (v.lang || "").toLowerCase().startsWith("de"))
+      || voices.find(v => /german|deutsch/i.test(v.name || ""))
+      || null;
 }
 
 function speakText(t,slow=false){
-  try{
-    if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){
-      alert("Sprachausgabe wird auf diesem Gerät/Browser nicht unterstützt. Sie können die Transkription nach 3x Hören anzeigen.");
-      return false;
-    }
-    let spoken = (typeof germanizeNumbersForSpeech === "function") ? germanizeNumbersForSpeech(t) : String(t||"");
-    let u = new SpeechSynthesisUtterance(spoken);
-    u.lang = "de-DE";
-    u.rate = slow ? 0.48 : 0.72;
-    u.pitch = 1;
-    u.volume = 1;
-    const voice = (typeof getGermanVoice === "function") ? getGermanVoice() : null;
-    if(voice) u.voice = voice;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-    return true;
-  }catch(e){
-    console.error("Sprachausgabe-Fehler:", e);
-    alert("Beim Hören gab es ein Problem. Bitte versuchen Sie es noch einmal oder zeigen Sie nach 3x Hören die Transkription an.");
-    return false;
-  }
+  if(!("speechSynthesis" in window)) return alert("Sprachausgabe wird nicht unterstützt.");
+  let spoken = germanizeNumbersForSpeech(t);
+  let u = new SpeechSynthesisUtterance(spoken);
+  u.lang = "de-DE";
+  u.rate = slow ? 0.48 : 0.72;
+  u.pitch = 1;
+  u.volume = 1;
+  const voice = getGermanVoice();
+  if(voice) u.voice = voice;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
 }
 
 
@@ -844,6 +821,54 @@ function showQuestionHelp(){
     fb.innerHTML = `<div class="answer-box"><strong>Richtige Frage:</strong><br>${questionVariants().join("<br>")}</div>`;
     helpWrongTries = 2;
   }
+}
+
+
+
+function puzzleHelpText(){
+  let topic=item().topic, first=item().qSie.split(" ")[0];
+  if(topic.includes("Heimatland")) return "Baue eine Frage nach der Herkunft. Beginne mit <strong>Woher</strong>.";
+  if(topic.includes("Sprache")) return "Baue eine Frage nach der Sprache. Beginne mit <strong>Was</strong>.";
+  if(topic.includes("Kinder")) return "Baue eine Frage nach Kindern. Beginne mit <strong>Haben</strong>.";
+  if(topic.includes("Familienstand")) return "Baue eine Frage zum Familienstand. Beginne mit <strong>Sind</strong>.";
+  if(topic.includes("Wohnort")) return "Baue eine Frage nach dem Wohnort. Beginne mit <strong>Wo</strong>.";
+  if(topic.includes("Alter")) return "Baue eine Frage nach dem Alter. Beginne mit <strong>Wie alt</strong>.";
+  if(topic.includes("Geburtsort")) return "Baue eine Frage nach dem Geburtsort. Beginne mit <strong>Wo</strong>.";
+  return "Baue die Frage. Beginne mit <strong>"+first+"</strong>.";
+}
+
+function responseHint(){
+  let x=item();
+  if(game==="puzzle") return typeof puzzleHelpText==="function" ? puzzleHelpText() : "Baue die Frage in der richtigen Reihenfolge.";
+  if(x.topic==="Name") return "Beginnen Sie mit: Ich heiße ...";
+  if(x.topic==="Heimatland") return "Beginnen Sie mit: Ich komme aus ...";
+  if(x.topic==="Sprache") return "Beginnen Sie mit: Ich spreche ...";
+  if(x.topic==="Wohnort") return "Beginnen Sie mit: Ich wohne in ...";
+  if(x.topic==="Alter") return "Beginnen Sie mit: Ich bin ... Jahre alt.";
+  if(x.topic==="Geburtsort") return "Beginnen Sie mit: Ich bin in ... geboren.";
+  if(x.topic && x.topic.startsWith("Buchstabieren")) return "Schreiben oder sagen Sie die Buchstaben einzeln.";
+  return "Antworten Sie mit einem passenden Satz.";
+}
+
+
+function disableCheckTemporarily(){
+  const b = $("checkBtn");
+  if(b){
+    b.disabled = true;
+    setTimeout(()=>{ if($("checkBtn")) $("checkBtn").disabled = false; }, 800);
+  }
+}
+function safeCheckAnswer(){
+  const input = $("ans");
+  if(!input) return;
+  disableCheckTemporarily();
+  mark(ok(input.value), input.value);
+}
+function safeCheckTypedRespond(){
+  const input = $("typedRespond");
+  if(!input) return;
+  disableCheckTemporarily();
+  markResponse(ok(input.value), input.value);
 }
 
 function mark(good,userAnswer=""){
@@ -879,7 +904,7 @@ function quickfireClick(btn){
  if(good){correct++;score+=10;$("feedback").innerHTML="<div class='ok'>✔ Richtig! +10 Punkte</div>"}else{$("feedback").innerHTML=`<div class='no'>❌ Falsch.</div><div class='small'><strong>Richtig:</strong> ${getAnswer()}</div>`}
  exerciseProgress.quickfire=Math.max(exerciseProgress.quickfire||0,Math.round(((i+1)/DATA.length)*100)); saveLocal();updateAll();showBlitzNextButton();
 }
-function showBlitzNextButton(){let fb=$("feedback");document.querySelectorAll("#nextQuestionBtn,#continueExerciseBtn").forEach(b=>b.remove()); if(i>=DATA.length-1){exerciseProgress.quickfire=100;fb.insertAdjacentHTML("beforeend",`<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`);$("continueExerciseBtn").onclick=goNextExercise}else{fb.insertAdjacentHTML("beforeend",`<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`);$("nextQuestionBtn").onclick=()=>{i++;resetListenCounter();saveLocal();render()}}}
+function showBlitzNextButton(){let fb=$("feedback");document.querySelectorAll("#nextQuestionBtn,#continueExerciseBtn").forEach(b=>b.remove()); if(i>=DATA.length-1){exerciseProgress.quickfire=100;fb.insertAdjacentHTML("beforeend",`<button class="success" id="continueExerciseBtn">✅ Du darfst zur nächsten Übung weiter</button>`);$("continueExerciseBtn").onclick=goNextExercise}else{fb.insertAdjacentHTML("beforeend",`<button class="success" id="nextQuestionBtn">⏭️ Nächste Frage</button>`);$("nextQuestionBtn").onclick=()=>{i++;saveLocal();render()}}}
 
 function markResponse(good,userAnswer=""){
  attempts++;answerHistory.push({question:item().topic,correct:good,answer:userAnswer,acceptedAnswers:answerVariants(),timestamp:new Date().toLocaleTimeString()});
@@ -937,47 +962,149 @@ function getWrongQuickAnswers(){
 function resetListenCounter(){
   listenClickCount = 0;
 }
-function updateTranscriptButton(){
-  const btn = $("transcriptBtn");
-  const hint = $("transcriptHint");
-  if(listenClickCount >= 3){
-    if(btn) btn.classList.remove("hidden");
-    if(hint) hint.innerHTML = "Sie können jetzt die Transkription anzeigen.";
-  }else{
-    if(hint) hint.innerHTML = `Noch ${3-listenClickCount}x hören, dann erscheint die Transkription.`;
-  }
+function updateListenButtons(){
+  const slowBtn = $("slowListenBtn");
+  const transcriptBtn = $("transcriptBtn");
+  if(listenClickCount >= 1 && slowBtn) slowBtn.classList.remove("hidden");
+  if(listenClickCount >= 3 && transcriptBtn) transcriptBtn.classList.remove("hidden");
 }
 function playHiddenAudio(text, slow=false){
-  try{
-    listenClickCount++;
-    speakText(text, slow);
-    updateTranscriptButton();
-  }catch(e){
-    console.error("Hören-Fehler:", e);
-    alert("Beim Hören gab es ein Problem. Bitte noch einmal klicken oder später die Transkription anzeigen.");
-    updateTranscriptButton();
-  }
+  listenClickCount++;
+  speakText(text, slow);
+  updateListenButtons();
 }
 function playCurrentQuestionHidden(){
   const x = item();
   playHiddenAudio((x && x.qSie) ? x.qSie : "", false);
 }
+function playCurrentQuestionSlow(){
+  const x = item();
+  listenClickCount++;
+  speakText((x && x.qSie) ? x.qSie : "", true);
+  updateListenButtons();
+}
 function playDictationHidden(){
-  try{
-    listenClickCount++;
-    const x = item();
-    if(x && x.topic && x.topic.startsWith("Buchstabieren")){
-      const n = x.topic.includes("Nachname") ? studentPerson.lname : studentPerson.fname;
-      spellSlow(n);
-    }else{
-      speakText(getAnswer(), true);
-    }
-    updateTranscriptButton();
-  }catch(e){
-    console.error("Diktat-Hören-Fehler:", e);
-    alert("Beim Hören gab es ein Problem. Bitte noch einmal klicken oder später die Transkription anzeigen.");
-    updateTranscriptButton();
+  const x = item();
+  listenClickCount++;
+  if(x && x.topic && x.topic.startsWith("Buchstabieren")){
+    const n = x.topic.includes("Nachname") ? studentPerson.lname : studentPerson.fname;
+    spellSlow(n);
+  }else{
+    speakText(getAnswer(), false);
   }
+  updateListenButtons();
+}
+function playDictationSlow(){
+  const x = item();
+  listenClickCount++;
+  if(x && x.topic && x.topic.startsWith("Buchstabieren")){
+    const n = x.topic.includes("Nachname") ? studentPerson.lname : studentPerson.fname;
+    spellSlow(n);
+  }else{
+    speakText(getAnswer(), true);
+  }
+  updateListenButtons();
+}
+
+
+function setMic(on){
+  let m=$("micStatus");
+  if(m)m.innerHTML=on?"🔴 Mikrofon aktiv – Sie können langsam sprechen ...":"⚪ Mikrofon aus";
+}
+function recog(cb){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    const msg = "Mikrofon/Spracherkennung wird auf diesem Gerät oder Browser nicht unterstützt. Bitte die Antwort tippen.";
+    const fb = $("feedback");
+    if(fb) fb.innerHTML = `<div class="no">${msg}</div>`;
+    else alert(msg);
+    setMic(false);
+    return;
+  }
+  try{
+    let r = new SR();
+    r.lang = "de-DE";
+    r.interimResults = true;
+    try{
+      r.continuous = !(/iphone|ipad|safari/i.test(navigator.userAgent) && !/chrome|crios|android/i.test(navigator.userAgent));
+    }catch(e){}
+    r.maxAlternatives = 3;
+    let finalText = "";
+    let interimText = "";
+    let stopTimer = null;
+    let didReturn = false;
+    function finish(){
+      if(didReturn) return;
+      didReturn = true;
+      const result = (finalText || interimText || "").trim();
+      setMic(false);
+      if(result) cb(result);
+      else{
+        const fb = $("feedback");
+        const msg = "Ich habe nichts verstanden. Bitte noch einmal sprechen oder die Antwort tippen.";
+        if(fb) fb.innerHTML = `<div class="no">${msg}</div>`;
+        else alert(msg);
+      }
+    }
+    function scheduleStop(){
+      clearTimeout(stopTimer);
+      stopTimer = setTimeout(()=>{ try{ r.stop(); }catch(e){ finish(); } }, 7000);
+    }
+    r.onstart = () => {
+      setMic(true);
+      const fb = $("feedback");
+      if(fb) fb.innerHTML = `<div class="help-box">🔴 Mikrofon aktiv. Sie können langsam sprechen.</div>`;
+      scheduleStop();
+    };
+    r.onresult = e => {
+      scheduleStop();
+      let temp = "";
+      for(let i=e.resultIndex; i<e.results.length; i++){
+        const t = e.results[i][0].transcript || "";
+        if(e.results[i].isFinal) finalText += t + " ";
+        else temp += t + " ";
+      }
+      interimText = (finalText + " " + temp).trim();
+      const heard = $("heard");
+      if(heard) heard.innerText = "Gehört: " + interimText;
+    };
+    r.onerror = e => {
+      clearTimeout(stopTimer);
+      setMic(false);
+      const fb = $("feedback");
+      let msg = "Mikrofonfehler. Bitte die Antwort tippen.";
+      if(e && e.error==="not-allowed") msg = "Mikrofon ist blockiert. Bitte im Browser erlauben oder die Antwort tippen.";
+      if(e && e.error==="no-speech") msg = "Ich habe nichts gehört. Bitte noch einmal sprechen oder tippen.";
+      if(fb) fb.innerHTML = `<div class="no">${msg}</div>`;
+      else alert(msg);
+    };
+    r.onend = () => { clearTimeout(stopTimer); finish(); };
+    r.start();
+  }catch(err){
+    setMic(false);
+    const fb = $("feedback");
+    const msg = "Mikrofon konnte nicht gestartet werden. Bitte die Antwort tippen.";
+    if(fb) fb.innerHTML = `<div class="no">${msg}</div>`;
+    else alert(msg);
+  }
+}
+function listenSpeech(){
+  recog(t=>{
+    const h=$("heard"); if(h) h.innerText="Gesprochen: "+t;
+    markResponse(ok(t),t);
+  });
+}
+function listenAndRespond(){
+  recog(t=>{
+    const h=$("heard"); if(h) h.innerText="Gehört: "+t;
+    markResponse(ok(t),t);
+  });
+}
+function listenExamQuestion(){
+  recog(t=>{
+    const h=$("heard"); if(h) h.innerText="Gesprochen: "+t;
+    markExam(okQuestion(t),t);
+  });
 }
 
 function render(){
@@ -989,17 +1116,17 @@ function render(){
   let ans=getAnswer(),alts=answerVariants(x).filter(a=>clean(a)!==clean(ans));
   html+=`<div class="big">${q}</div><p>${x.qDu}</p><button onclick="speakCurrent()">🔊 Frage hören</button><button onclick="speakDictationAnswer()">🔊 Antwort hören</button><h3>Antwort</h3><p class="big">${escapeHtml(ans)}</p><h3>Alle akzeptierten Antworten</h3>${answerVariants(x).map(a=>`<p>• ${escapeHtml(a)}</p>`).join("")}<button class="success" onclick="nextLearn()">⏭️ Nächste Frage</button>`;
  }
- if(game==="qa"){html+=`<div class="big">${q}</div><input id="ans" placeholder="Antwort schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><button class="secondary" onclick="showTwoStageHelp()">Hilfe</button><div id="feedback"></div>`}
- if(game==="speak"){html+=`<div class="big">${q}</div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenSpeech()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
+ if(game==="qa"){html+=`<div class="big">${q}</div><input id="ans" placeholder="Antwort schreiben..."><button id="checkBtn" onclick="safeCheckAnswer()">Überprüfen</button><button class="secondary" onclick="showTwoStageHelp()">Hilfe</button><div id="feedback"></div>`}
+ if(game==="speak"){html+=`<div class="big">${q}</div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenSpeech()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button id="checkBtn" onclick="safeCheckTypedRespond()">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
  if(game==="puzzle"){
   let words=shuffle(q.replace("?"," ?").split(/\s+/).filter(Boolean));
   html+=`<p>🧩 Baue die Frage richtig zusammen.</p><div id="chosen"></div><div id="wordList">${words.map(w=>`<button class="word" onclick="chooseWord(this)">${escapeHtml(w)}</button>`).join("")}</div><button onclick="checkPuzzle()">Überprüfen</button><button class="secondary" onclick="render()">Neu</button><div id="feedback"></div>`;
  }
- if(game==="dictation"){let ans=getAnswer();html+=`<p>✍️ Höre und schreibe die Antwort.</p><button onclick="playDictationHidden()">🔊 Antwort hören</button><p id="transcriptHint" class="small">Nach 3x Hören können Sie die Transkription anzeigen.</p><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(getAnswer())">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><input id="ans" placeholder="Schreiben..."><button onclick="mark(ok($('ans').value),$('ans').value)">Überprüfen</button><div id="feedback"></div>`}
+ if(game==="dictation"){let ans=getAnswer();html+=`<p>✍️ Höre und schreibe die Antwort.</p><button onclick="playDictationHidden()">🔊 Antwort hören</button><button id="slowListenBtn" class="secondary hidden" onclick="playDictationSlow()">🐢 Langsamer hören</button><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(getAnswer())">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><input id="ans" placeholder="Schreiben..."><button id="checkBtn" onclick="safeCheckAnswer()">Überprüfen</button><div id="feedback"></div>`}
  if(game==="memory"){html+=`<p>🃏 Finde Frage und passende Antwort.</p><div class="memory" id="memoryGrid"></div><div id="feedback"></div>`}
  if(game==="quickfire"){html+=`<div class="big">${q}</div><p>⚡ Wähle die richtige Antwort.</p>${getWrongQuickAnswers().map(a=>`<button type="button" class="option quiz-option" data-answer="${escapeHtml(a)}" onclick="quickfireClick(this)">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
- if(game==="listen"){html+=`<p>🎧 Höre die Frage. Die Frage wird nicht angezeigt.</p><button onclick="playCurrentQuestionHidden()">🔊 Frage abspielen</button><p id="transcriptHint" class="small">Nach 3x Hören können Sie die Transkription anzeigen.</p><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div>${getCrossTopicAnswers().map(a=>`<button class="option" onclick="mark(ok(this.dataset.answer),this.dataset.answer)" data-answer="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
- if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="playCurrentQuestionHidden()">🔊 Frage abspielen</button><p id="transcriptHint" class="small">Nach 3x Hören können Sie die Transkription anzeigen.</p><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button onclick="markResponse(ok($('typedRespond').value),$('typedRespond').value)">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
+ if(game==="listen"){html+=`<p>🎧 Höre die Frage. Die Frage wird nicht angezeigt.</p><button onclick="playCurrentQuestionHidden()">🔊 Frage abspielen</button><button id="slowListenBtn" class="secondary hidden" onclick="playCurrentQuestionSlow()">🐢 Langsamer hören</button><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div>${getCrossTopicAnswers().map(a=>`<button class="option" onclick="mark(ok(this.dataset.answer),this.dataset.answer)" data-answer="${escapeHtml(a)}">${escapeHtml(a)}</button>`).join("")}<div id="feedback"></div>`}
+ if(game==="listenrespond"){html+=`<p>🎤 Höre die Frage und antworte. Die Frage wird nicht angezeigt.</p><button onclick="playCurrentQuestionHidden()">🔊 Frage abspielen</button><button id="slowListenBtn" class="secondary hidden" onclick="playCurrentQuestionSlow()">🐢 Langsamer hören</button><button id="transcriptBtn" class="secondary hidden" onclick="showTranscript(item().qSie)">👁️ Transkription anzeigen</button><div id="transcriptBox" class="hidden"></div><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenAndRespond()">🎤 Mikrofon starten</button><input id="typedRespond" placeholder="Oder hier tippen, falls Mikrofon nicht funktioniert..."><button id="checkBtn" onclick="safeCheckTypedRespond()">Überprüfen</button><p id="heard"></p><div id="feedback"></div>`}
  if(game==="exam"){html+=`<div id="examTimer" class="small"></div><p>Bilde die passende Frage zu diesem Begriff:</p><div class="big">🔎 ${x.topic}</div><input id="ans" placeholder="Passende Frage schreiben..."><button onclick="markExam(okQuestion($('ans').value),$('ans').value)">Überprüfen</button><div id="micStatus" class="small">⚪ Mikrofon aus</div><button onclick="listenExamQuestion()">🎤 Frage sprechen</button><button class="secondary" onclick="$('feedback').innerHTML='<div class=small><strong>Hilfe:</strong> '+examQuestionHint()+'</div>'">Hilfe</button><button class="success hidden" id="nextExamBtn" onclick="nextExam()">⏭️ Nächste Prüfungsaufgabe</button><p id="heard"></p><div id="feedback"></div>`; setTimeout(updateExamTimer,0)}
  $("game").innerHTML=html; if(game==="memory")renderMemoryGrid(); stats(); updateStatsBox();
  }catch(e){
@@ -1027,50 +1154,8 @@ function speakDictationAnswer(){
   }
 }
 
-function setMic(on){let m=$("micStatus");if(m)m.innerHTML=on?"🔴 Mikrofon aktiv – ich höre zu ...":"⚪ Mikrofon aus"}
-function recog(cb){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    alert("Mikrofon/Spracherkennung wird auf diesem Gerät oder Browser nicht unterstützt. Bitte die Antwort tippen.");
-    return;
-  }
-  try{
-    let r=new SR();
-    r.lang="de-DE";
-    r.interimResults=true;
-    r.continuous=true;
-    r.maxAlternatives=3;
-    let finalText = "";
-    let silenceTimer = null;
-    const stopLater = () => {
-      clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(()=>{ try{r.stop()}catch(e){} }, 6500);
-    };
-    r.onstart=()=>{setMic(true); stopLater();};
-    r.onend=()=>{setMic(false); if(finalText.trim()) cb(finalText.trim());};
-    r.onerror=e=>{
-      setMic(false);
-      let msg = "Mikrofonfehler. Bitte Antwort tippen.";
-      if(e && e.error==="not-allowed") msg = "Mikrofon ist blockiert. Bitte im Browser erlauben oder Antwort tippen.";
-      if(e && e.error==="no-speech") msg = "Ich habe nichts gehört. Bitte noch einmal sprechen oder tippen.";
-      alert(msg);
-    };
-    r.onresult=e=>{
-      stopLater();
-      let txt = "";
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        txt += e.results[i][0].transcript + " ";
-        if(e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
-      }
-      const heard = $("heard");
-      if(heard) heard.innerText = "Gehört: " + (finalText || txt);
-    };
-    r.start();
-  }catch(err){
-    setMic(false);
-    alert("Mikrofon konnte nicht gestartet werden. Bitte Antwort tippen.");
-  }
-}
+
+
 
 
 function showCourseRanking(){
