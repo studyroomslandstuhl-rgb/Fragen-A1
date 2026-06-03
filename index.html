@@ -248,9 +248,15 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid
 </div>
 <div class="flex">
 <button onclick="showLeaderboard()">🏅 Bestenliste</button><button onclick="showCourseRanking()">👥 Kurs-Rangliste</button>
-<button onclick="exportMe()">📤 Export</button><button onclick="syncManual()">☁️ An Lehrerin senden</button>
+
 </div>
 <div id="game" class="card"></div>
+</section>
+
+<section id="courseRankingSection" class="hidden card">
+<h2>👥 Kurs-Rangliste</h2>
+<button class="secondary" onclick="closeCourseRanking()">Zurück</button>
+<div id="courseRankingBox"></div>
 </section>
 
 <section id="leaderboardSection" class="hidden card">
@@ -324,6 +330,7 @@ let student="",course="",game="learn",i=0,score=0,attempts=0,correct=0;
 let studentPerson={...DEFAULT_PROFILE}, answerHistory=[], exerciseProgress={}, questionOrder=DATA.map((_,idx)=>idx);
 let memoryCards=[], first=null, lock=false, helpWrongTries=0, responseTries=0;
 let currentQuestion="", currentAnswer="", examStartTime=null, examTimer=null, examCorrect=0, examAttempts=0, examFinished=false;
+let editingProfile = false;
 let listenClickCount = 0;
 let lastGoogleSend = 0;
 
@@ -413,17 +420,40 @@ function resetEverything(){
   location.reload();
 }
 
+
 function start(){
   if(!validateLogin())return;
-  studentPerson=buildStudentPerson(); if(typeof cleanProfile==='function') cleanProfile(); student=studentPerson.full; course=$("course").value.trim();
-  loadLocal(); saveProfileToStorage(); localStorage.setItem("A1_ACTIVE_SESSION",key());
+  const oldKey = (student && course) ? key() : null;
+  studentPerson=buildStudentPerson(); 
+  if(typeof cleanProfile==='function') cleanProfile(); 
+  student=studentPerson.full; 
+  course=$("course").value.trim();
+
+  loadLocal();
+  // Profil aus Formular ist jetzt die Quelle, nicht alte gespeicherte Daten.
+  const freshProfile = buildStudentPerson();
+  studentPerson = freshProfile;
+  if(typeof cleanProfile==='function') cleanProfile();
+  student = studentPerson.full;
+  saveProfileToStorage();
+  localStorage.setItem("A1_ACTIVE_SESSION",key());
+  if(oldKey && oldKey !== key() && editingProfile){
+    localStorage.removeItem(oldKey);
+  }
+  editingProfile = false;
   sendToGoogleSheet("login", true);
-  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  $("login").classList.add("hidden"); 
+  $("app").classList.remove("hidden");
   $("hello").innerText="Hallo, "+studentPerson.fname+"!";
-  updateAll(); render();
+  if(typeof loadRewards==='function') loadRewards();
+  updateAll(); 
+  render();
 }
 
+
+
 function editProfile(){
+  editingProfile = true;
   $("app").classList.add("hidden");
   $("login").classList.remove("hidden");
   fillLoginFromProfile({...studentPerson, course});
@@ -434,33 +464,28 @@ function editProfile(){
   }
 }
 
+
 function logout(){if(confirm("Abmelden? Der gespeicherte Nutzer bleibt erhalten.")){localStorage.removeItem("A1_ACTIVE_SESSION");location.reload();}}
 function teacher(){$("login").classList.add("hidden");$("app").classList.add("hidden");$("dashboard").classList.remove("hidden")}
 function back(){location.reload()}
 
 
 function progressSummary(){
-  const parts = [];
-  if(typeof EXERCISE_NAMES !== "undefined"){
-    Object.keys(EXERCISE_NAMES).forEach(ex => {
-      parts.push(ex + ":" + ((exerciseProgress||{})[ex] || 0) + "%");
-    });
-  }
-  return parts.join(" | ");
+  return EXERCISES.map(ex => ex + ':' + (Number((exerciseProgress||{})[ex])||0) + '%').join(' | ');
 }
 
 function sendToGoogleSheet(exerciseName="progress", force=false){
   if(!GOOGLE_SHEET_URL || !student || !course) return;
-
   const now = Date.now();
-  if(!force && now - lastGoogleSend < 5000) return;
-  lastGoogleSend = now;
+  if(!force && typeof lastGoogleSend !== "undefined" && now - lastGoogleSend < 5000) return;
+  if(typeof lastGoogleSend !== "undefined") lastGoogleSend = now;
 
   const payload = {
+    rowId: studentRowId(),
     course: course || "",
     student: student || "",
     exercise: exerciseName || game || "",
-    score: score || 0,
+    score: typeof overallProgress==="function" ? overallProgress() : (score || 0),
     correct: correct || 0,
     attempts: attempts || 0,
     accuracy: attempts ? Math.round((correct || 0) * 100 / attempts) : 0,
@@ -485,13 +510,15 @@ function sendToGoogleSheet(exerciseName="progress", force=false){
   }
 }
 
+
 function sendExamResultToGoogleSheet(result){
   if(!GOOGLE_SHEET_URL || !student || !course) return;
   const payload = {
+    rowId: studentRowId(),
     course: course || "",
     student: student || "",
     exercise: "Prüfung",
-    score: score || 0,
+    score: typeof overallProgress==="function" ? overallProgress() : (score || 0),
     correct: correct || 0,
     attempts: attempts || 0,
     accuracy: result.accuracy || 0,
@@ -515,6 +542,7 @@ function sendExamResultToGoogleSheet(result){
     console.warn("Google Sheet exam send failed:", e);
   }
 }
+
 
 function syncManual(){
   sendToGoogleSheet("manuell", true);
@@ -680,6 +708,30 @@ function cleanProfile(){
   studentPerson.birthplace = normalizeKnownName(studentPerson.birthplace || "");
 }
 
+
+function hasOnlyGermanLanguage(){
+  const raw = String((studentPerson && studentPerson.lang) || "").trim().toLowerCase();
+  const normalized = raw.replace(/\s+/g,"").replace(/;/g,",");
+  return normalized === "deutsch";
+}
+function languageAnswerTemplates(){
+  if(hasOnlyGermanLanguage()){
+    return ["Ich spreche Deutsch.","Deutsch."];
+  }
+  return [
+    "Ich spreche {lang} und ein bisschen Deutsch.",
+    "Ich spreche {lang}.",
+    "{lang}.",
+    "{lang} und ein bisschen Deutsch."
+  ];
+}
+function normalizeSpeechText(text){
+  return String(text||"")
+    .replace(/\bSt\.\s*/g,"Sankt ")
+    .replace(/\bStr\.\b/g,"Straße")
+    .replace(/\bNr\.\b/g,"Nummer");
+}
+
 function fillTemplate(t, p=studentPerson){
   p = p || {};
   let first = p.fname || DEFAULT_PROFILE.fname || "";
@@ -709,7 +761,8 @@ function fillTemplate(t, p=studentPerson){
 }
 
 function answerVariants(x=item(),p=studentPerson){
- let variants=(x.answerTemplates||[]).map(t=>fillTemplate(t,p));
+ let templates = (x.topic==="Sprache" && typeof languageAnswerTemplates==="function") ? languageAnswerTemplates() : (x.answerTemplates||[]);
+ let variants=templates.map(t=>fillTemplate(t,p));
  if(x.topic==="Kinder"){let n=String(p.childrenNumber); if(n==="0")variants.push("Nein.","Ich habe keine Kinder."); else if(n==="1")variants.push("Ja.","Ich habe ein Kind.","Ich habe 1 Kind."); else variants.push("Ja.",`Ich habe ${n} Kinder.`,`Ich habe ${numberWord(n)} Kinder.`)}
  if(x.topic==="Familienstand"){let m=p.marital;if(m==="verheiratet")variants.push("Ja.","Ich bin verheiratet.");else variants.push("Nein.",`Ich bin ${m}.`)}
  if(x.topic.startsWith("Buchstabieren")){let n=x.topic.includes("Nachname")?p.lname:p.fname; variants.push(n,n.toUpperCase().split("").join(" "),n.toLowerCase().split("").join(" "),n.toLowerCase().split("").join("-"))}
@@ -786,6 +839,7 @@ function getGermanVoice(){
 function speakText(t,slow=false){
   if(!("speechSynthesis" in window)) return alert("Sprachausgabe wird nicht unterstützt.");
   let spoken = germanizeNumbersForSpeech(t);
+    spoken = normalizeSpeechText(spoken);
   let u = new SpeechSynthesisUtterance(spoken);
   u.lang = "de-DE";
   u.rate = slow ? 0.48 : 0.72;
@@ -1160,23 +1214,62 @@ function speakDictationAnswer(){
 
 function showCourseRanking(){
   const c = course || ($("course")?.value || "");
-  let students = JSON.parse(localStorage.getItem("A1_STUDENTS_"+c)||"[]");
-  students = students.sort((a,b)=>(overallOfProgress(b.exerciseProgress||{}) - overallOfProgress(a.exerciseProgress||{})));
-  if(!students.length){
-    alert("Noch keine Kursdaten auf diesem Gerät. Gemeinsame Rangliste über Google Sheet braucht eine Lese-API.");
-    return;
-  }
-  const html = `<div class="rank-box"><strong>Kurs-Rangliste (${escapeHtml(c)}):</strong><br>` +
-    students.map((s,idx)=>`${idx+1}. ${escapeHtml(s.student)} – ${overallOfProgress(s.exerciseProgress||{})}%`).join("<br>") + `</div>`;
-  $("game").insertAdjacentHTML("afterbegin", html);
+  $("app").classList.add("hidden");
+  $("leaderboardSection").classList.add("hidden");
+  $("courseRankingSection").classList.remove("hidden");
+  $("courseRankingBox").innerHTML = "<p>Rangliste wird geladen...</p>";
+
+  loadCourseRankingJsonp(c).then(data=>{
+    let rows = (data && data.rows) ? data.rows : [];
+    rows = rows.sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0));
+    if(!rows.length){
+      $("courseRankingBox").innerHTML = "<div class='no'>Noch keine Ergebnisse für diesen Kurs.</div>";
+      return;
+    }
+    $("courseRankingBox").innerHTML =
+      `<h3>Kurs: ${escapeHtml(c)}</h3><table><tr><th>Platz</th><th>Name</th><th>Fortschritt</th><th>Genauigkeit</th><th>Letzte Aktivität</th></tr>`+
+      rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.student||"")}</td><td>${escapeHtml(String(r.score||0))}%</td><td>${escapeHtml(String(r.accuracy||0))}%</td><td>${escapeHtml(r.timestamp||"")}</td></tr>`).join("")+
+      `</table>`;
+  }).catch(err=>{
+    $("courseRankingBox").innerHTML = `<div class="no">${escapeHtml(err.message)}</div>`;
+  });
 }
+
 function overallOfProgress(progress){
   let list = EXERCISES.filter(ex=>ex!=="exam");
   if(!list.length) return 0;
   return Math.round(list.reduce((s,ex)=>s+(Number(progress[ex])||0),0)/list.length);
 }
 
-function showLeaderboard(){let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");$("leaderboard").innerHTML=b.length?b.map((e,i)=>`<div class="leader"><b>${i+1}. ${escapeHtml(e.name)}</b> · ${escapeHtml(e.course)}<br>Wert: ${e.score} · Zeit: ${e.time} · Genauigkeit: ${e.accuracy}%</div>`).join(""):"Noch keine Ergebnisse.";$("app").classList.add("hidden");$("leaderboardSection").classList.remove("hidden")}
+function studentRowId(){
+  return (course || "") + "||" + (student || "");
+}
+function loadCourseRankingJsonp(courseCode){
+  return new Promise((resolve, reject)=>{
+    const cbName = "rankingCallback_" + Date.now();
+    window[cbName] = data => {
+      try{ delete window[cbName]; }catch(e){}
+      const script = document.getElementById(cbName);
+      if(script) script.remove();
+      resolve(data);
+    };
+    const s = document.createElement("script");
+    s.id = cbName;
+    s.src = GOOGLE_SHEET_URL + "?action=ranking&course=" + encodeURIComponent(courseCode) + "&callback=" + cbName;
+    s.onerror = () => {
+      try{ delete window[cbName]; }catch(e){}
+      reject(new Error("Rangliste konnte nicht geladen werden."));
+    };
+    document.body.appendChild(s);
+  });
+}
+
+function closeCourseRanking(){
+  $("courseRankingSection").classList.add("hidden");
+  $("app").classList.remove("hidden");
+}
+
+function showLeaderboard(){let b=JSON.parse(localStorage.getItem("A1_EXAM_RESULTS")||"[]");$("leaderboard").innerHTML=b.length?b.map((e,i)=>`<div class="leader"><b>${i+1}. ${escapeHtml(e.name)}</b> · ${escapeHtml(e.course)}<br>Wert: ${e.score} · Zeit: ${e.time} · Genauigkeit: ${e.accuracy}%</div>`).join(""):"Noch keine Ergebnisse.";$("app").classList.add("hidden");$("courseRankingSection").classList.add("hidden");$("leaderboardSection").classList.remove("hidden")}
 function closeLeaderboard(){$("leaderboardSection").classList.add("hidden");$("app").classList.remove("hidden")}
 function exportMe(){let data=JSON.stringify({student,course,score,attempts,correct,answerHistory,exerciseProgress,studentPerson},null,2);let blob=new Blob([data],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=student+"_"+course+".json";a.click()}
 function importFiles(e){let files=[...e.target.files],rows=[];files.forEach(f=>{let r=new FileReader();r.onload=ev=>{let d=JSON.parse(ev.target.result);rows.push(d);$("dashTable").innerHTML="<table><tr><th>Name</th><th>Kurs</th><th>Punkte</th><th>Richtig</th><th>Versuche</th></tr>"+rows.map(x=>`<tr><td>${x.student}</td><td>${x.course}</td><td>${x.score}</td><td>${x.correct}</td><td>${x.attempts}</td></tr>`).join("")+"</table>"};r.readAsText(f)})}
